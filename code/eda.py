@@ -83,6 +83,7 @@ for filename_prefix in filename_prefixes:
     ax_hist_snapshot.legend()
     fig_hist_snapshot.savefig(folder_results + filename_prefix + "_events_per_snapshot.png", 
                               bbox_inches="tight")
+    # plt.close(fig_hist_snapshot)
     
     
     
@@ -102,16 +103,22 @@ for filename_prefix in filename_prefixes:
     ax_sample.set_xlabel("Delay (ns)")
     ax_sample.set_ylabel("Events per bin (" + str(delay_bin_size) + " ns)")
     ax_sample.legend()
-    fig_sample.savefig(folder_results + filename_prefix + "_hist_smoothed.png",
+    fig_sample.savefig(folder_results + filename_prefix + "_hist.png",
                        bbox_inches="tight")
+    # plt.close(fig_sample)
     
-    
+    # From pulse details, calculate expected number of peaks in the histogram.
+    # Work out which peak is the zero-delay multi-photon-emission (MPE) peak.
+    # Work out at which raw delay the peaks start.
     pulse_period = 1/(pulse_freq*pulse_freq_unit*pulse_period_unit)
     n_peaks = 1 + int(delay_range/pulse_period)
     id_mpe = int(delta_zero/pulse_period)
     delay_start = np.mod(delta_zero, pulse_period)
     
-    amps = np.ma.array(np.zeros(n_peaks), mask=False)
+    # Search for max amplitudes within 1/4 pulse period of expected locations.
+    # Sample the inter-peak mid-positions for the background detection events.
+    amps_raw = np.ma.array(np.zeros(n_peaks), mask=False)
+    bg_samples = np.zeros(n_peaks-1)
     for i in range(n_peaks):
         search_min = max(round((delay_start - pulse_period/4 + i*pulse_period)
                                /delay_bin_size), 
@@ -119,11 +126,26 @@ for filename_prefix in filename_prefixes:
         search_max = min(round((delay_start + pulse_period/4 + i*pulse_period)
                                /delay_bin_size), 
                          df_delays.size-1)
-        amps[i] = max(df_sample[search_min:search_max])
-    amp_mpe = amps[id_mpe]
-    amps.mask[id_mpe] = True
-    amp_low = min(amps)
-    amp_high = max(amps)
-    amp_avg = np.mean(amps)
-    amp_std = np.std(amps)
+        amps_raw[i] = max(df_sample[search_min:search_max])
+        if i != 0:
+            id_bg_sample = round((delay_start + (i-1/2)*pulse_period)/delay_bin_size)
+            bg_samples[i-1] = df_sample[id_bg_sample]
+
+    # Calculate background statistics, especially the average.
+    bg_low = min(bg_samples)
+    bg_high = max(bg_samples)
+    bg_avg = np.mean(bg_samples)
+    bg_std = np.std(bg_samples)
+    
+    # Calculate amplitude statistics, correcting for the background.
+    # Mask out the MPE peak when processing the other peaks.
+    amp_mpe = amps_raw[id_mpe] - bg_avg
+    amps_raw.mask[id_mpe] = True
+    amp_low = min(amps_raw) - bg_avg
+    amp_high = max(amps_raw) - bg_avg
+    amp_avg = np.mean(amps_raw) - bg_avg
+    amp_std = np.std(amps_raw)
+    
+    # Calculate the 'quality' of the quantum dot.
+    g2zero = amp_mpe/amp_avg
     
