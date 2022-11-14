@@ -7,16 +7,19 @@ Created on Mon Nov 14 21:28:59 2022
 
 import numpy as np
 
-def calc_domain_knowledge(pulse_freq, pulse_freq_unit, pulse_period_unit):
+def compile_domain_knowledge(in_pulse_freq, in_delta_zero, in_delay_range):
     
     # From pulse details, calculate expected number of peaks in the histogram.
     # Work out which peak is the zero-delay multi-photon-emission (MPE) peak.
     # Work out at which raw delay the peaks start.
-    knowledge["pulse_period"] = 1/(pulse_freq*pulse_freq_unit*pulse_period_unit)
-    knowledge["n_peaks"] = 1 + int(delay_range/pulse_period)
-    knowledge["id_mpe"] = int(delta_zero/pulse_period)
-    knowledge["delay_start"] = np.mod(delta_zero, pulse_period)
+    pulse_period = 1/(in_pulse_freq)
+    knowledge = dict()
+    knowledge["pulse_period"] = pulse_period
+    knowledge["n_peaks"] = 1 + int(in_delay_range/pulse_period)
+    knowledge["id_mpe"] = int(in_delta_zero/pulse_period)
+    knowledge["delay_start"] = np.mod(in_delta_zero, pulse_period)
     
+    return knowledge
 
 def calc_g2zero_quick(in_df_sample, in_bin_size, in_knowledge):
     
@@ -63,7 +66,8 @@ def calc_g2zero_quick(in_df_sample, in_bin_size, in_knowledge):
     amp_stats = {"avg": amp_avg,
                  "std": amp_std,
                  "low": amp_low,
-                 "high": amp_high}
+                 "high": amp_high,
+                 "mpe": amp_mpe}
     
     # Calculate the 'quality' of the quantum dot.
     g2zero = amp_mpe/amp_avg

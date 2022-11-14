@@ -9,10 +9,11 @@ import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+
 from scipy.optimize import curve_fit
 from time import time
 
-
+import calc
 
 filename_prefixes = ["1p2uW_3000cps_time bin width 128 ps",
                      "2p5uW_4000cps",
@@ -28,23 +29,18 @@ folder_results = "../results/"
 # Define how far the bound of several windows should be from its centre.
 # These are used for the quick methods of deriving g2(0).
 # E.g. +-3 ns at 0.256 ns per delay bin means 23 bins are used in the window.
-smoothing_bound = 1
-smoothing_unit = 1e-9     # 1 nanosecond.
+smoothing_bound = 1e-9     # Unit: s.
 
 # Define experimental device parameters, i.e. for the laser and detectors.
 # These will not be used in the fitting methods of deriving g2(0).
-pulse_freq = 80
-pulse_freq_unit = 1e6       # 1 MHz.
-pulse_period = None         # Easily calculated later from the variables above.
-pulse_period_unit = 1e-9    # 1 nanosecond.
-delta_zero = 60.7
-delta_unit = 1e-9           # 1 nanosecond.
+pulse_freq = 80e6            # Unit: Hz.
+delta_zero = 60.7e-9        # Unit: s.
 
 # Define detection-sampling parameters.
 snapshot_bin_size = 10
-snapshot_unit = 1       # 1 second.
-delay_bin_size = None   # Easily calculated later from the data.
-delay_unit = 1e-9       # 1 nanosecond.
+
+# SI conversion factors when working with data and later plotting.
+delay_unit = 1e-9           # 1 nanosecond.
 
 
 for filename_prefix in filename_prefixes:
@@ -58,7 +54,7 @@ for filename_prefix in filename_prefixes:
             df = pd.read_csv(folder_data + filename_data, sep="\t", header=None)
             if df_events is None:
                 print("Loading into dataframe: %s" % folder_data + filename_data)
-                df_delays = df[df.columns[0]]
+                df_delays = df[df.columns[0]]*delay_unit
                 df_events = df[df.columns[1:]]
             else:
                 print("Merging into dataframe: %s" % folder_data + filename_data)
@@ -88,64 +84,31 @@ for filename_prefix in filename_prefixes:
     
     
     # Sample snapshots of the detection events.
-    df_sample = df_events.sum(axis=1)
+    df_sample_full = df_events.sum(axis=1)
     
     # Rolling-average out the noise for a delay-based histogram of the sample.
-    kernel_size = max(1, int(smoothing_bound*smoothing_unit*2/(delay_bin_size*delay_unit)))
+    kernel_size = max(1, int(smoothing_bound*2/(delay_bin_size)))
     kernel = np.ones(kernel_size)/kernel_size
-    df_sample_smooth = np.convolve(df_sample, kernel, mode="same")
+    df_sample_full_smooth = np.convolve(df_sample_full, kernel, mode="same")
     
     # Plot the delay-based histogram of the sample, raw and smoothed.
     fig_sample, ax_sample = plt.subplots()
-    ax_sample.plot(df_delays, df_sample, label="Raw")
-    ax_sample.plot(df_delays, df_sample_smooth, 
+    ax_sample.plot(df_delays/delay_unit, df_sample_full, label="Raw")
+    ax_sample.plot(df_delays/delay_unit, df_sample_full_smooth, 
                        label="Rolling Avg. (" + str(kernel_size) + " bins)")
     ax_sample.set_xlabel("Delay (ns)")
-    ax_sample.set_ylabel("Events per bin (" + str(delay_bin_size) + " ns)")
+    ax_sample.set_ylabel("Events per bin (" + str(delay_bin_size/delay_unit) + " ns)")
     ax_sample.legend()
     fig_sample.savefig(folder_results + filename_prefix + "_hist.png",
                        bbox_inches="tight")
     # plt.close(fig_sample)
-    
-    # From pulse details, calculate expected number of peaks in the histogram.
-    # Work out which peak is the zero-delay multi-photon-emission (MPE) peak.
-    # Work out at which raw delay the peaks start.
-    pulse_period = 1/(pulse_freq*pulse_freq_unit*pulse_period_unit)
-    n_peaks = 1 + int(delay_range/pulse_period)
-    id_mpe = int(delta_zero/pulse_period)
-    delay_start = np.mod(delta_zero, pulse_period)
-    
-    # Search for max amplitudes within 1/4 pulse period of expected locations.
-    # Sample the inter-peak mid-positions for the background detection events.
-    amps_raw = np.ma.array(np.zeros(n_peaks), mask=False)
-    bg_samples = np.zeros(n_peaks-1)
-    for i in range(n_peaks):
-        search_min = max(round((delay_start - pulse_period/4 + i*pulse_period)
-                               /delay_bin_size), 
-                         0)
-        search_max = min(round((delay_start + pulse_period/4 + i*pulse_period)
-                               /delay_bin_size), 
-                         df_delays.size-1)
-        amps_raw[i] = max(df_sample[search_min:search_max])
-        if i != 0:
-            id_bg_sample = round((delay_start + (i-1/2)*pulse_period)/delay_bin_size)
-            bg_samples[i-1] = df_sample[id_bg_sample]
 
-    # Calculate background statistics, especially the average.
-    bg_low = min(bg_samples)
-    bg_high = max(bg_samples)
-    bg_avg = np.mean(bg_samples)
-    bg_std = np.std(bg_samples)
+    domain_knowledge = calc.compile_domain_knowledge(pulse_freq, 
+                                                     delta_zero, delay_range)
     
-    # Calculate amplitude statistics, correcting for the background.
-    # Mask out the MPE peak when processing the other peaks.
-    amp_mpe = amps_raw[id_mpe] - bg_avg
-    amps_raw.mask[id_mpe] = True
-    amp_low = min(amps_raw) - bg_avg
-    amp_high = max(amps_raw) - bg_avg
-    amp_avg = np.mean(amps_raw) - bg_avg
-    amp_std = np.std(amps_raw)
-    
-    # Calculate the 'quality' of the quantum dot.
-    g2zero = amp_mpe/amp_avg
-    
+    g2zero, amp_stats, bg_stats = calc.calc_g2zero_quick(df_sample_full, 
+                                                         delay_bin_size, 
+                                                         domain_knowledge)
+    g2zero_s, amp_stats_s, bg_stats_s = calc.calc_g2zero_quick(df_sample_full_smooth, 
+                                                               delay_bin_size, 
+                                                               domain_knowledge)
