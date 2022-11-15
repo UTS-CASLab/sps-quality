@@ -15,13 +15,13 @@ from time import time
 
 import calc
 
-filename_prefixes = [#"1p2uW_3000cps_time bin width 128 ps",
-                      # "2p5uW_4000cps",
-                      # "4uW_4100cps",
-                      # "8uW_5100cps",
-                      # "10uW_6000cps",
-                      # "10uW_12000cps",
-                      # "20uW_7000cps",
+filename_prefixes = ["1p2uW_3000cps_time bin width 128 ps",
+                       "2p5uW_4000cps",
+                       "4uW_4100cps",
+                       "8uW_5100cps",
+                       "10uW_6000cps",
+                       "10uW_12000cps",
+                       "20uW_7000cps",
                      "30uW_7000cps"]
 folder_data = "../data/"
 folder_results = "../results/"
@@ -140,14 +140,14 @@ for filename_prefix in filename_prefixes:
     ax_traces.set_xlabel("Total Detection Time (s)")
     ax_traces.set_ylabel("g2(0)")
     ax_traces.set_ylim([0,1])
-    fig_hist_snapshot.savefig(folder_results + filename_prefix + "_trace_g2zero.png", 
-                              bbox_inches="tight")
+    fig_traces.savefig(folder_results + filename_prefix + "_trace_g2zero.png",
+                       bbox_inches="tight")
     
     fig_traces_s, ax_traces_s = plt.subplots()
     ax_traces_s.plot(range_snapshots, np.transpose(trace_g2zero_s))
     ax_traces_s.set_xlabel("Total Detection Time (s)")
     ax_traces_s.set_ylabel("g2(0)")
     ax_traces_s.set_ylim([0,1])
-    fig_hist_snapshot.savefig(folder_results + filename_prefix + "_trace_g2zero_smoothed.png", 
-                              bbox_inches="tight")
+    fig_traces_s.savefig(folder_results + filename_prefix + "_trace_g2zero_smoothed.png",
+                         bbox_inches="tight")
     # plt.close(fig_hist_snapshot)
