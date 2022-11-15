@@ -15,16 +15,20 @@ from time import time
 
 import calc
 
-filename_prefixes = ["1p2uW_3000cps_time bin width 128 ps",
-                     "2p5uW_4000cps",
-                     "4uW_4100cps",
-                     "8uW_5100cps",
-                     "10uW_6000cps",
-                     "10uW_12000cps",
-                     "20uW_7000cps",
+filename_prefixes = [#"1p2uW_3000cps_time bin width 128 ps",
+                      # "2p5uW_4000cps",
+                      # "4uW_4100cps",
+                      # "8uW_5100cps",
+                      # "10uW_6000cps",
+                      # "10uW_12000cps",
+                      # "20uW_7000cps",
                      "30uW_7000cps"]
 folder_data = "../data/"
 folder_results = "../results/"
+
+# The number of traces to generate per datafile.
+# Each trace shows how g2(0) estimates change with greater sampling.
+num_traces = 10
 
 # Define how far the bound of several windows should be from its centre.
 # These are used for the quick methods of deriving g2(0).
@@ -59,10 +63,9 @@ for filename_prefix in filename_prefixes:
             else:
                 print("Merging into dataframe: %s" % folder_data + filename_data)
                 df_events = pd.concat([df_events, df[df.columns[1:]]], axis=1)
-    df_snapshots = range(0, 
-                         df_events.columns.size * snapshot_bin_size, 
-                         snapshot_bin_size)
-    df_events.columns = df_snapshots
+    range_snapshots = range(0, df_events.columns.size * snapshot_bin_size, 
+                            snapshot_bin_size)
+    df_events.columns = range_snapshots
     
     # Calculate helper variables.
     delay_bin_size = df_delays[1] - df_delays[0]
@@ -72,14 +75,14 @@ for filename_prefix in filename_prefixes:
     df_hist_snapshot = df_events.sum(axis=0)
     
     fig_hist_snapshot, ax_hist_snapshot = plt.subplots()
-    ax_hist_snapshot.plot(df_snapshots, df_hist_snapshot, label="Raw")
+    ax_hist_snapshot.plot(range_snapshots, df_hist_snapshot, label="Raw")
     ax_hist_snapshot.set_xlabel("Snapshot (s)")
     ax_hist_snapshot.set_ylabel("Events per bin (" 
                                 + str(snapshot_bin_size) + " s)")
     ax_hist_snapshot.legend()
     fig_hist_snapshot.savefig(folder_results + filename_prefix + "_events_per_snapshot.png", 
                               bbox_inches="tight")
-    # plt.close(fig_hist_snapshot)
+    plt.close(fig_hist_snapshot)
     
     
     
@@ -101,14 +104,50 @@ for filename_prefix in filename_prefixes:
     ax_sample.legend()
     fig_sample.savefig(folder_results + filename_prefix + "_hist.png",
                        bbox_inches="tight")
-    # plt.close(fig_sample)
+    plt.close(fig_sample)
 
+    # Generate domain knowledge on how the histogram should look like.
     domain_knowledge = calc.compile_domain_knowledge(pulse_freq, 
                                                      delta_zero, delay_range)
     
-    g2zero, amp_stats, bg_stats = calc.calc_g2zero_quick(df_sample_full, 
-                                                         delay_bin_size, 
-                                                         domain_knowledge)
-    g2zero_s, amp_stats_s, bg_stats_s = calc.calc_g2zero_quick(df_sample_full_smooth, 
-                                                               delay_bin_size, 
-                                                               domain_knowledge)
+    # Generate and plot traces of how quality estimates change over time.
+    np.random.seed(0)
+    trace_g2zero = np.zeros([num_traces, len(range_snapshots)])
+    trace_g2zero_s = np.zeros([num_traces, len(range_snapshots)])
+    for i in range(num_traces):
+        order_snapshot = np.random.permutation(range_snapshots)
+        hist = np.zeros(df_delays.size)
+        
+        count_snapshot = 0
+        for id_snapshot in order_snapshot:
+            hist = hist + df_events[id_snapshot]
+            hist_smooth = np.convolve(hist, kernel, mode="same")
+    
+            g2zero, amp_stats, bg_stats = calc.calc_g2zero_quick(hist,
+                                                                 delay_bin_size,
+                                                                 domain_knowledge)
+            g2zero_s, amp_stats_s, bg_stats_s = calc.calc_g2zero_quick(hist_smooth,
+                                                                       delay_bin_size,
+                                                                       domain_knowledge)
+            
+            trace_g2zero[i, count_snapshot] = g2zero
+            trace_g2zero_s[i, count_snapshot] = g2zero_s
+            
+            count_snapshot += 1
+            
+    fig_traces, ax_traces = plt.subplots()
+    ax_traces.plot(range_snapshots, np.transpose(trace_g2zero))
+    ax_traces.set_xlabel("Total Detection Time (s)")
+    ax_traces.set_ylabel("g2(0)")
+    ax_traces.set_ylim([0,1])
+    fig_hist_snapshot.savefig(folder_results + filename_prefix + "_trace_g2zero.png", 
+                              bbox_inches="tight")
+    
+    fig_traces_s, ax_traces_s = plt.subplots()
+    ax_traces_s.plot(range_snapshots, np.transpose(trace_g2zero_s))
+    ax_traces_s.set_xlabel("Total Detection Time (s)")
+    ax_traces_s.set_ylabel("g2(0)")
+    ax_traces_s.set_ylim([0,1])
+    fig_hist_snapshot.savefig(folder_results + filename_prefix + "_trace_g2zero_smoothed.png", 
+                              bbox_inches="tight")
+    # plt.close(fig_hist_snapshot)
