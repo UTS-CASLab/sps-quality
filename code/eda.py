@@ -17,19 +17,19 @@ import calc
 import plot
 
 filename_prefixes = ["1p2uW_3000cps_time bin width 128 ps",
-                       "2p5uW_4000cps",
-                       "4uW_4100cps",
-                       "8uW_5100cps",
-                       "10uW_6000cps",
-                       "10uW_12000cps",
-                       "20uW_7000cps",
+                     "2p5uW_4000cps",
+                     "4uW_4100cps",
+                     "8uW_5100cps",
+                     "10uW_6000cps",
+                     "10uW_12000cps",
+                     "20uW_7000cps",
                      "30uW_7000cps"]
 folder_data = "../data/"
 folder_results = "../results/"
 
 # The number of traces to generate per datafile.
 # Each trace shows how g2(0) estimates change with greater sampling.
-num_traces = 1
+num_traces = 120
 
 # Define how far the bound of several windows should be from its centre.
 # These are used for the quick methods of deriving g2(0).
@@ -147,7 +147,7 @@ for filename_prefix in filename_prefixes:
     print("%i estimated g2(0) trajectories across %i snapshots: %f s" 
           % (num_traces, len(range_snapshots), time() - t))
             
-    plot.plot_traces(trace_g2zero, range_snapshots, save_prefix, "g2zero",
+    plot.plot_traces(trace_g2zero, range_snapshots, save_prefix, "g2(0)",
                      in_ylim = [0, 1])
     plot.plot_traces(trace_amp_mpe, range_snapshots, save_prefix, "amp_mpe",
                      in_ylim = [0, np.max([np.max(trace_amp_mpe), np.max(trace_amp_mpe_s)])])
@@ -160,7 +160,7 @@ for filename_prefix in filename_prefixes:
     plot.plot_traces(trace_bg_std, range_snapshots, save_prefix, "bg_std",
                      in_ylim = [0, np.max([np.max(trace_bg_std), np.max(trace_bg_std_s)])])
     
-    plot.plot_traces(trace_g2zero_s, range_snapshots, save_prefix, "g2zero", "smoothed",
+    plot.plot_traces(trace_g2zero_s, range_snapshots, save_prefix, "g2(0)", "smoothed",
                      in_ylim = [0, 1])
     plot.plot_traces(trace_amp_mpe_s, range_snapshots, save_prefix, "amp_mpe", "smoothed",
                      in_ylim = [0, np.max([np.max(trace_amp_mpe), np.max(trace_amp_mpe_s)])])
