@@ -34,13 +34,11 @@ def calc_g2zero_quick(in_df_sample, in_bin_size, in_knowledge):
     amps_raw = np.ma.array(np.zeros(n_peaks), mask=False)
     bg_samples = np.zeros(n_peaks-1)
     for i in range(n_peaks):
-        search_min = max(round((delay_start - pulse_period/4 + i*pulse_period)
-                               /in_bin_size), 
-                         0)
-        search_max = min(round((delay_start + pulse_period/4 + i*pulse_period)
-                               /in_bin_size), 
-                         in_df_sample.size-1)
-        amps_raw[i] = max(in_df_sample[search_min:search_max])
+        search_min = np.max([round((delay_start - pulse_period/4 + i*pulse_period)
+                                  /in_bin_size), 0])
+        search_max = np.min([round((delay_start + pulse_period/4 + i*pulse_period)
+                                  /in_bin_size), in_df_sample.size-1])
+        amps_raw[i] = np.max(in_df_sample[search_min:search_max])
         if i != 0:
             id_bg_sample = round((delay_start + (i-1/2)*pulse_period)/in_bin_size)
             bg_samples[i-1] = in_df_sample[id_bg_sample]
@@ -48,8 +46,8 @@ def calc_g2zero_quick(in_df_sample, in_bin_size, in_knowledge):
     # Calculate background statistics, especially the average.
     bg_avg = np.mean(bg_samples)
     bg_std = np.std(bg_samples)
-    bg_low = min(bg_samples)
-    bg_high = max(bg_samples)
+    bg_low = np.min(bg_samples)
+    bg_high = np.max(bg_samples)
     bg_stats = {"avg": bg_avg,
                 "std": bg_std,
                 "low": bg_low,
@@ -61,8 +59,8 @@ def calc_g2zero_quick(in_df_sample, in_bin_size, in_knowledge):
     amps_raw.mask[id_mpe] = True
     amp_avg = np.mean(amps_raw) - bg_avg
     amp_std = np.std(amps_raw)
-    amp_low = min(amps_raw) - bg_avg
-    amp_high = max(amps_raw) - bg_avg
+    amp_low = np.min(amps_raw) - bg_avg
+    amp_high = np.max(amps_raw) - bg_avg
     amp_stats = {"avg": amp_avg,
                  "std": amp_std,
                  "low": amp_low,

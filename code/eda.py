@@ -14,6 +14,7 @@ from scipy.optimize import curve_fit
 from time import time
 
 import calc
+import plot
 
 filename_prefixes = ["1p2uW_3000cps_time bin width 128 ps",
                        "2p5uW_4000cps",
@@ -28,7 +29,7 @@ folder_results = "../results/"
 
 # The number of traces to generate per datafile.
 # Each trace shows how g2(0) estimates change with greater sampling.
-num_traces = 10
+num_traces = 1
 
 # Define how far the bound of several windows should be from its centre.
 # These are used for the quick methods of deriving g2(0).
@@ -113,7 +114,20 @@ for filename_prefix in filename_prefixes:
     # Generate and plot traces of how quality estimates change over time.
     np.random.seed(0)
     trace_g2zero = np.zeros([num_traces, len(range_snapshots)])
+    trace_amp_mpe = np.zeros([num_traces, len(range_snapshots)])
+    trace_amp_avg = np.zeros([num_traces, len(range_snapshots)])
+    trace_amp_std = np.zeros([num_traces, len(range_snapshots)])
+    trace_bg_avg = np.zeros([num_traces, len(range_snapshots)])
+    trace_bg_std = np.zeros([num_traces, len(range_snapshots)])
+    
     trace_g2zero_s = np.zeros([num_traces, len(range_snapshots)])
+    trace_amp_mpe_s = np.zeros([num_traces, len(range_snapshots)])
+    trace_amp_avg_s = np.zeros([num_traces, len(range_snapshots)])
+    trace_amp_std_s = np.zeros([num_traces, len(range_snapshots)])
+    trace_bg_avg_s = np.zeros([num_traces, len(range_snapshots)])
+    trace_bg_std_s = np.zeros([num_traces, len(range_snapshots)])
+    
+    t = time()
     for i in range(num_traces):
         order_snapshot = np.random.permutation(range_snapshots)
         hist = np.zeros(df_delays.size)
@@ -131,23 +145,46 @@ for filename_prefix in filename_prefixes:
                                                                        domain_knowledge)
             
             trace_g2zero[i, count_snapshot] = g2zero
+            trace_amp_mpe[i, count_snapshot] = amp_stats["mpe"]
+            trace_amp_avg[i, count_snapshot] = amp_stats["avg"]
+            trace_amp_std[i, count_snapshot] = amp_stats["std"]
+            trace_bg_avg[i, count_snapshot] = bg_stats["avg"]
+            trace_bg_std[i, count_snapshot] = bg_stats["std"]
+
             trace_g2zero_s[i, count_snapshot] = g2zero_s
+            trace_amp_mpe_s[i, count_snapshot] = amp_stats_s["mpe"]
+            trace_amp_avg_s[i, count_snapshot] = amp_stats_s["avg"]
+            trace_amp_std_s[i, count_snapshot] = amp_stats_s["std"]
+            trace_bg_avg_s[i, count_snapshot] = bg_stats_s["avg"]
+            trace_bg_std_s[i, count_snapshot] = bg_stats_s["std"]
             
             count_snapshot += 1
+    print("%i estimated g2(0) trajectories across %i snapshots: %f s" 
+          % (num_traces, len(range_snapshots), time() - t))
             
-    fig_traces, ax_traces = plt.subplots()
-    ax_traces.plot(range_snapshots, np.transpose(trace_g2zero))
-    ax_traces.set_xlabel("Total Detection Time (s)")
-    ax_traces.set_ylabel("g2(0)")
-    ax_traces.set_ylim([0,1])
-    fig_traces.savefig(folder_results + filename_prefix + "_trace_g2zero.png",
-                       bbox_inches="tight")
+    save_prefix = folder_results + filename_prefix
+    plot.plot_traces(trace_g2zero, range_snapshots, save_prefix, "g2zero",
+                     in_ylim = [0, 1])
+    plot.plot_traces(trace_amp_mpe, range_snapshots, save_prefix, "amp_mpe",
+                     in_ylim = [0, np.max([np.max(trace_amp_mpe), np.max(trace_amp_mpe_s)])])
+    plot.plot_traces(trace_amp_avg, range_snapshots, save_prefix, "amp_avg",
+                     in_ylim = [0, np.max([np.max(trace_amp_avg), np.max(trace_amp_avg_s)])])
+    plot.plot_traces(trace_amp_std, range_snapshots, save_prefix, "amp_std",
+                     in_ylim = [0, np.max([np.max(trace_amp_std), np.max(trace_amp_std_s)])])
+    plot.plot_traces(trace_bg_avg, range_snapshots, save_prefix, "bg_avg",
+                     in_ylim = [0, np.max([np.max(trace_bg_avg), np.max(trace_bg_avg_s)])])
+    plot.plot_traces(trace_bg_std, range_snapshots, save_prefix, "bg_std",
+                     in_ylim = [0, np.max([np.max(trace_bg_std), np.max(trace_bg_std_s)])])
     
-    fig_traces_s, ax_traces_s = plt.subplots()
-    ax_traces_s.plot(range_snapshots, np.transpose(trace_g2zero_s))
-    ax_traces_s.set_xlabel("Total Detection Time (s)")
-    ax_traces_s.set_ylabel("g2(0)")
-    ax_traces_s.set_ylim([0,1])
-    fig_traces_s.savefig(folder_results + filename_prefix + "_trace_g2zero_smoothed.png",
-                         bbox_inches="tight")
-    # plt.close(fig_hist_snapshot)
+    plot.plot_traces(trace_g2zero_s, range_snapshots, save_prefix, "g2zero", "smoothed",
+                     in_ylim = [0, 1])
+    plot.plot_traces(trace_amp_mpe_s, range_snapshots, save_prefix, "amp_mpe", "smoothed",
+                     in_ylim = [0, np.max([np.max(trace_amp_mpe), np.max(trace_amp_mpe_s)])])
+    plot.plot_traces(trace_amp_avg_s, range_snapshots, save_prefix, "amp_avg", "smoothed",
+                     in_ylim = [0, np.max([np.max(trace_amp_avg), np.max(trace_amp_avg_s)])])
+    plot.plot_traces(trace_amp_std_s, range_snapshots, save_prefix, "amp_std", "smoothed",
+                     in_ylim = [0, np.max([np.max(trace_amp_std), np.max(trace_amp_std_s)])])
+    plot.plot_traces(trace_bg_avg_s, range_snapshots, save_prefix, "bg_avg", "smoothed",
+                     in_ylim = [0, np.max([np.max(trace_bg_avg), np.max(trace_bg_avg_s)])])
+    plot.plot_traces(trace_bg_std_s, range_snapshots, save_prefix, "bg_std", "smoothed",
+                     in_ylim = [0, np.max([np.max(trace_bg_std), np.max(trace_bg_std_s)])])
