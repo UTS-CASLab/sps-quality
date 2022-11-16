@@ -49,6 +49,10 @@ delay_unit = 1e-9           # 1 nanosecond.
 
 
 for filename_prefix in filename_prefixes:
+    
+    # Prepares save destination for any results.
+    save_prefix = folder_results + filename_prefix
+    
     # Loads data files into a single dataframe.
     # Establishes delay/snapshot arrays, as well as a detection event matrix.
     # WARNING: There is no bug checking. Ensure files are appropriate to merge.
@@ -73,19 +77,7 @@ for filename_prefix in filename_prefixes:
     delay_range = df_delays[df_delays.size-1] - df_delays[0]
     
     # Create a histogram of events across snapshots and plot it.
-    df_hist_snapshot = df_events.sum(axis=0)
-    
-    fig_hist_snapshot, ax_hist_snapshot = plt.subplots()
-    ax_hist_snapshot.plot(range_snapshots, df_hist_snapshot, label="Raw")
-    ax_hist_snapshot.set_xlabel("Snapshot (s)")
-    ax_hist_snapshot.set_ylabel("Events per bin (" 
-                                + str(snapshot_bin_size) + " s)")
-    ax_hist_snapshot.legend()
-    fig_hist_snapshot.savefig(folder_results + filename_prefix + "_events_per_snapshot.png", 
-                              bbox_inches="tight")
-    plt.close(fig_hist_snapshot)
-    
-    
+    plot.plot_event_history(df_events, range_snapshots, save_prefix)
     
     # Sample snapshots of the detection events.
     df_sample_full = df_events.sum(axis=1)
@@ -96,16 +88,9 @@ for filename_prefix in filename_prefixes:
     df_sample_full_smooth = np.convolve(df_sample_full, kernel, mode="same")
     
     # Plot the delay-based histogram of the sample, raw and smoothed.
-    fig_sample, ax_sample = plt.subplots()
-    ax_sample.plot(df_delays/delay_unit, df_sample_full, label="Raw")
-    ax_sample.plot(df_delays/delay_unit, df_sample_full_smooth, 
-                       label="Rolling Avg. (" + str(kernel_size) + " bins)")
-    ax_sample.set_xlabel("Delay (ns)")
-    ax_sample.set_ylabel("Events per bin (" + str(delay_bin_size/delay_unit) + " ns)")
-    ax_sample.legend()
-    fig_sample.savefig(folder_results + filename_prefix + "_hist.png",
-                       bbox_inches="tight")
-    plt.close(fig_sample)
+    plot.plot_event_histogram(df_sample_full, df_delays, delay_unit, save_prefix,
+                              in_hist_comp = df_sample_full_smooth, 
+                              in_label_comp = "Rolling Avg. (" + str(kernel_size) + " bins)")
 
     # Generate domain knowledge on how the histogram should look like.
     domain_knowledge = calc.compile_domain_knowledge(pulse_freq, 
@@ -162,7 +147,6 @@ for filename_prefix in filename_prefixes:
     print("%i estimated g2(0) trajectories across %i snapshots: %f s" 
           % (num_traces, len(range_snapshots), time() - t))
             
-    save_prefix = folder_results + filename_prefix
     plot.plot_traces(trace_g2zero, range_snapshots, save_prefix, "g2zero",
                      in_ylim = [0, 1])
     plot.plot_traces(trace_amp_mpe, range_snapshots, save_prefix, "amp_mpe",
