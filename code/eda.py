@@ -10,22 +10,25 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-from scipy.optimize import curve_fit
 from time import time
 
 import calc
 import plot
 
-filename_prefixes = ["1p2uW_3000cps_time bin width 128 ps",
-                     "2p5uW_4000cps",
-                     "4uW_4100cps",
-                     "8uW_5100cps",
-                     "10uW_6000cps",
-                     "10uW_12000cps",
-                     "20uW_7000cps",
-                     "30uW_7000cps"]
+filename_prefixes = [
+    # "1p2uW_3000cps_time bin width 128 ps",
+    "2p5uW_4000cps"#,
+    # "4uW_4100cps",
+    # "8uW_5100cps",
+    # "10uW_6000cps",
+    # "10uW_12000cps",
+    # "20uW_7000cps",
+    # "30uW_7000cps"
+    ]
 folder_data = "../data/"
-folder_results = "../results/"
+folder_plots = "../results/"
+folder_saves = "../saves/"
+random_seed = 0
 
 # The number of traces to generate per datafile.
 # Each trace shows how g2(0) estimates change with greater sampling.
@@ -50,8 +53,9 @@ delay_unit = 1e-9           # 1 nanosecond.
 
 for filename_prefix in filename_prefixes:
     
-    # Prepares save destination for any results.
-    save_prefix = folder_results + filename_prefix
+    # Prepares save destination for any plots and storable results.
+    plot_prefix = folder_plots + filename_prefix
+    save_prefix = folder_saves + filename_prefix + "_traces_" + str(num_traces) + "_seed_" + str(random_seed)
     
     # Loads data files into a single dataframe.
     # Establishes delay/snapshot arrays, as well as a detection event matrix.
@@ -72,14 +76,14 @@ for filename_prefix in filename_prefixes:
                             snapshot_bin_size)
     df_events.columns = range_snapshots
     
-    # Calculate helper variables.
+    # Calculate helper variables; these may be recalculated inside functions.
     delay_bin_size = df_delays[1] - df_delays[0]
     delay_range = df_delays[df_delays.size-1] - df_delays[0]
     
     # Create a histogram of events across snapshots and plot it.
-    plot.plot_event_history(df_events, range_snapshots, save_prefix)
+    plot.plot_event_history(df_events, range_snapshots, plot_prefix)
     
-    # Sample snapshots of the detection events.
+    # Sum all snapshots of the detection events.
     df_sample_full = df_events.sum(axis=1)
     
     # Rolling-average out the noise for a delay-based histogram of the sample.
@@ -87,8 +91,8 @@ for filename_prefix in filename_prefixes:
     kernel = np.ones(kernel_size)/kernel_size
     df_sample_full_smooth = np.convolve(df_sample_full, kernel, mode="same")
     
-    # Plot the delay-based histogram of the sample, raw and smoothed.
-    plot.plot_event_histogram(df_sample_full, df_delays, delay_unit, save_prefix,
+    # Plot the delay-based histogram of the full sample, raw and smoothed.
+    plot.plot_event_histogram(df_sample_full, df_delays, delay_unit, plot_prefix + "_smooth",
                               in_hist_comp = df_sample_full_smooth, 
                               in_label_comp = "Rolling Avg. (" + str(kernel_size) + " bins)")
 
@@ -96,79 +100,89 @@ for filename_prefix in filename_prefixes:
     domain_knowledge = calc.compile_domain_knowledge(pulse_freq, 
                                                      delta_zero, delay_range)
     
-    # Generate and plot traces of how quality estimates change over time.
-    np.random.seed(0)
-    trace_g2zero = np.zeros([num_traces, len(range_snapshots)])
-    trace_amp_mpe = np.zeros([num_traces, len(range_snapshots)])
-    trace_amp_avg = np.zeros([num_traces, len(range_snapshots)])
-    trace_amp_std = np.zeros([num_traces, len(range_snapshots)])
-    trace_bg_avg = np.zeros([num_traces, len(range_snapshots)])
-    trace_bg_std = np.zeros([num_traces, len(range_snapshots)])
-    
-    trace_g2zero_s = np.zeros([num_traces, len(range_snapshots)])
-    trace_amp_mpe_s = np.zeros([num_traces, len(range_snapshots)])
-    trace_amp_avg_s = np.zeros([num_traces, len(range_snapshots)])
-    trace_amp_std_s = np.zeros([num_traces, len(range_snapshots)])
-    trace_bg_avg_s = np.zeros([num_traces, len(range_snapshots)])
-    trace_bg_std_s = np.zeros([num_traces, len(range_snapshots)])
-    
+    # Fit the expectation of the histogram: https://doi.org/10.1063/1.5143786
     t = time()
-    for i in range(num_traces):
-        order_snapshot = np.random.permutation(range_snapshots)
-        hist = np.zeros(df_delays.size)
+    p_opt = calc.calc_g2zero_fit(df_sample_full, df_delays, domain_knowledge)
+    print("Fit for %i parameters: %f s" % (len(p_opt), time() - t))
+    
+    # Plot the delay-based histogram of the full sample, raw and fitted.
+    plot.plot_event_histogram(df_sample_full, df_delays, delay_unit, plot_prefix + "_fit",
+                              in_hist_comp = calc.func(df_delays, domain_knowledge, *p_opt), 
+                              in_label_comp = "Fit")
+    
+    # # Generate and plot traces of how quality estimates change over time.
+    # np.random.seed(random_seed)
+    # trace_g2zero = np.zeros([num_traces, len(range_snapshots)])
+    # trace_amp_mpe = np.zeros([num_traces, len(range_snapshots)])
+    # trace_amp_avg = np.zeros([num_traces, len(range_snapshots)])
+    # trace_amp_std = np.zeros([num_traces, len(range_snapshots)])
+    # trace_bg_avg = np.zeros([num_traces, len(range_snapshots)])
+    # trace_bg_std = np.zeros([num_traces, len(range_snapshots)])
+    
+    # trace_g2zero_s = np.zeros([num_traces, len(range_snapshots)])
+    # trace_amp_mpe_s = np.zeros([num_traces, len(range_snapshots)])
+    # trace_amp_avg_s = np.zeros([num_traces, len(range_snapshots)])
+    # trace_amp_std_s = np.zeros([num_traces, len(range_snapshots)])
+    # trace_bg_avg_s = np.zeros([num_traces, len(range_snapshots)])
+    # trace_bg_std_s = np.zeros([num_traces, len(range_snapshots)])
+    
+    # t = time()
+    # for i in range(num_traces):
+    #     order_snapshot = np.random.permutation(range_snapshots)
+    #     hist = np.zeros(df_delays.size)
         
-        count_snapshot = 0
-        for id_snapshot in order_snapshot:
-            hist = hist + df_events[id_snapshot]
-            hist_smooth = np.convolve(hist, kernel, mode="same")
+    #     count_snapshot = 0
+    #     for id_snapshot in order_snapshot:
+    #         hist = hist + df_events[id_snapshot]
+    #         hist_smooth = np.convolve(hist, kernel, mode="same")
     
-            g2zero, amp_stats, bg_stats = calc.calc_g2zero_quick(hist,
-                                                                 delay_bin_size,
-                                                                 domain_knowledge)
-            g2zero_s, amp_stats_s, bg_stats_s = calc.calc_g2zero_quick(hist_smooth,
-                                                                       delay_bin_size,
-                                                                       domain_knowledge)
+    #         g2zero, amp_stats, bg_stats = calc.calc_g2zero_quick(hist,
+    #                                                              delay_bin_size,
+    #                                                              domain_knowledge)
+    #         g2zero_s, amp_stats_s, bg_stats_s = calc.calc_g2zero_quick(hist_smooth,
+    #                                                                    delay_bin_size,
+    #                                                                    domain_knowledge)
             
-            trace_g2zero[i, count_snapshot] = g2zero
-            trace_amp_mpe[i, count_snapshot] = amp_stats["mpe"]
-            trace_amp_avg[i, count_snapshot] = amp_stats["avg"]
-            trace_amp_std[i, count_snapshot] = amp_stats["std"]
-            trace_bg_avg[i, count_snapshot] = bg_stats["avg"]
-            trace_bg_std[i, count_snapshot] = bg_stats["std"]
+    #         trace_g2zero[i, count_snapshot] = g2zero
+    #         trace_amp_mpe[i, count_snapshot] = amp_stats["mpe"]
+    #         trace_amp_avg[i, count_snapshot] = amp_stats["avg"]
+    #         trace_amp_std[i, count_snapshot] = amp_stats["std"]
+    #         trace_bg_avg[i, count_snapshot] = bg_stats["avg"]
+    #         trace_bg_std[i, count_snapshot] = bg_stats["std"]
 
-            trace_g2zero_s[i, count_snapshot] = g2zero_s
-            trace_amp_mpe_s[i, count_snapshot] = amp_stats_s["mpe"]
-            trace_amp_avg_s[i, count_snapshot] = amp_stats_s["avg"]
-            trace_amp_std_s[i, count_snapshot] = amp_stats_s["std"]
-            trace_bg_avg_s[i, count_snapshot] = bg_stats_s["avg"]
-            trace_bg_std_s[i, count_snapshot] = bg_stats_s["std"]
+    #         trace_g2zero_s[i, count_snapshot] = g2zero_s
+    #         trace_amp_mpe_s[i, count_snapshot] = amp_stats_s["mpe"]
+    #         trace_amp_avg_s[i, count_snapshot] = amp_stats_s["avg"]
+    #         trace_amp_std_s[i, count_snapshot] = amp_stats_s["std"]
+    #         trace_bg_avg_s[i, count_snapshot] = bg_stats_s["avg"]
+    #         trace_bg_std_s[i, count_snapshot] = bg_stats_s["std"]
             
-            count_snapshot += 1
-    print("%i estimated g2(0) trajectories across %i snapshots: %f s" 
-          % (num_traces, len(range_snapshots), time() - t))
+    #         count_snapshot += 1
+    # print("%i estimated g2(0) trajectories across %i snapshots: %f s" 
+    #       % (num_traces, len(range_snapshots), time() - t))
             
-    plot.plot_traces(trace_g2zero, range_snapshots, save_prefix, "g2(0)",
-                     in_ylim = [0, 1])
-    plot.plot_traces(trace_amp_mpe, range_snapshots, save_prefix, "amp_mpe",
-                     in_ylim = [0, np.max([np.max(trace_amp_mpe), np.max(trace_amp_mpe_s)])])
-    plot.plot_traces(trace_amp_avg, range_snapshots, save_prefix, "amp_avg",
-                     in_ylim = [0, np.max([np.max(trace_amp_avg), np.max(trace_amp_avg_s)])])
-    plot.plot_traces(trace_amp_std, range_snapshots, save_prefix, "amp_std",
-                     in_ylim = [0, np.max([np.max(trace_amp_std), np.max(trace_amp_std_s)])])
-    plot.plot_traces(trace_bg_avg, range_snapshots, save_prefix, "bg_avg",
-                     in_ylim = [0, np.max([np.max(trace_bg_avg), np.max(trace_bg_avg_s)])])
-    plot.plot_traces(trace_bg_std, range_snapshots, save_prefix, "bg_std",
-                     in_ylim = [0, np.max([np.max(trace_bg_std), np.max(trace_bg_std_s)])])
+    # plot.plot_traces(trace_g2zero, range_snapshots, plot_prefix, "g2(0)",
+    #                  in_ylim = [0, 1])
+    # plot.plot_traces(trace_amp_mpe, range_snapshots, plot_prefix, "amp_mpe",
+    #                  in_ylim = [0, np.max([np.max(trace_amp_mpe), np.max(trace_amp_mpe_s)])])
+    # plot.plot_traces(trace_amp_avg, range_snapshots, plot_prefix, "amp_avg",
+    #                  in_ylim = [0, np.max([np.max(trace_amp_avg), np.max(trace_amp_avg_s)])])
+    # plot.plot_traces(trace_amp_std, range_snapshots, plot_prefix, "amp_std",
+    #                  in_ylim = [0, np.max([np.max(trace_amp_std), np.max(trace_amp_std_s)])])
+    # plot.plot_traces(trace_bg_avg, range_snapshots, plot_prefix, "bg_avg",
+    #                  in_ylim = [0, np.max([np.max(trace_bg_avg), np.max(trace_bg_avg_s)])])
+    # plot.plot_traces(trace_bg_std, range_snapshots, plot_prefix, "bg_std",
+    #                  in_ylim = [0, np.max([np.max(trace_bg_std), np.max(trace_bg_std_s)])])
     
-    plot.plot_traces(trace_g2zero_s, range_snapshots, save_prefix, "g2(0)", "smoothed",
-                     in_ylim = [0, 1])
-    plot.plot_traces(trace_amp_mpe_s, range_snapshots, save_prefix, "amp_mpe", "smoothed",
-                     in_ylim = [0, np.max([np.max(trace_amp_mpe), np.max(trace_amp_mpe_s)])])
-    plot.plot_traces(trace_amp_avg_s, range_snapshots, save_prefix, "amp_avg", "smoothed",
-                     in_ylim = [0, np.max([np.max(trace_amp_avg), np.max(trace_amp_avg_s)])])
-    plot.plot_traces(trace_amp_std_s, range_snapshots, save_prefix, "amp_std", "smoothed",
-                     in_ylim = [0, np.max([np.max(trace_amp_std), np.max(trace_amp_std_s)])])
-    plot.plot_traces(trace_bg_avg_s, range_snapshots, save_prefix, "bg_avg", "smoothed",
-                     in_ylim = [0, np.max([np.max(trace_bg_avg), np.max(trace_bg_avg_s)])])
-    plot.plot_traces(trace_bg_std_s, range_snapshots, save_prefix, "bg_std", "smoothed",
-                     in_ylim = [0, np.max([np.max(trace_bg_std), np.max(trace_bg_std_s)])])
+    # plot.plot_traces(trace_g2zero_s, range_snapshots, plot_prefix, "g2(0)", "smoothed",
+    #                  in_ylim = [0, 1])
+    # plot.plot_traces(trace_amp_mpe_s, range_snapshots, plot_prefix, "amp_mpe", "smoothed",
+    #                  in_ylim = [0, np.max([np.max(trace_amp_mpe), np.max(trace_amp_mpe_s)])])
+    # plot.plot_traces(trace_amp_avg_s, range_snapshots, plot_prefix, "amp_avg", "smoothed",
+    #                  in_ylim = [0, np.max([np.max(trace_amp_avg), np.max(trace_amp_avg_s)])])
+    # plot.plot_traces(trace_amp_std_s, range_snapshots, plot_prefix, "amp_std", "smoothed",
+    #                  in_ylim = [0, np.max([np.max(trace_amp_std), np.max(trace_amp_std_s)])])
+    # plot.plot_traces(trace_bg_avg_s, range_snapshots, plot_prefix, "bg_avg", "smoothed",
+    #                  in_ylim = [0, np.max([np.max(trace_bg_avg), np.max(trace_bg_avg_s)])])
+    # plot.plot_traces(trace_bg_std_s, range_snapshots, plot_prefix, "bg_std", "smoothed",
+    #                  in_ylim = [0, np.max([np.max(trace_bg_std), np.max(trace_bg_std_s)])])

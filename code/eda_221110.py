@@ -105,7 +105,7 @@ def func(x, n, bg, delta, amps, taus):
 # The third and fourth denote a common peak amplitude and decay rate.
 def func_basic(x, n, *args):
     bg, delta, amp_all, tau_all = args[0]
-    # print("BG %f. Delta %f. Amp all %f. Tau all %f." % (bg, delta, amp_all, tau_all))
+    print("BG %f. Delta %f. Amp all %f. Tau all %f." % (bg, delta, amp_all, tau_all))
     return func(x, n, bg, delta, [amp_all]*n, [tau_all]*n)
 
 # A fine form of the core fitting function with 2n arguments.
