@@ -16,14 +16,14 @@ import calc
 import plot
 
 filename_prefixes = [
-    # "1p2uW_3000cps_time bin width 128 ps",
-    "2p5uW_4000cps"#,
-    # "4uW_4100cps",
-    # "8uW_5100cps",
-    # "10uW_6000cps",
-    # "10uW_12000cps",
-    # "20uW_7000cps",
-    # "30uW_7000cps"
+    "1p2uW_3000cps_time bin width 128 ps",
+    "2p5uW_4000cps",
+    "4uW_4100cps",
+    "8uW_5100cps",
+    "10uW_6000cps",
+    "10uW_12000cps",
+    "20uW_7000cps",
+    "30uW_7000cps"
     ]
 folder_data = "../data/"
 folder_plots = "../results/"
@@ -86,6 +86,13 @@ for filename_prefix in filename_prefixes:
     # Sum all snapshots of the detection events.
     df_sample_full = df_events.sum(axis=1)
     
+    # Generate domain knowledge on how the histogram should look like.
+    domain_knowledge = calc.compile_domain_knowledge(pulse_freq, 
+                                                     delta_zero, delay_range)
+    closeup_xlim = [delta_zero - domain_knowledge["pulse_period"]*3/2,
+                    delta_zero + domain_knowledge["pulse_period"]*3/2]
+     
+    
     # Rolling-average out the noise for a delay-based histogram of the sample.
     kernel_size = max(1, int(smoothing_bound*2/(delay_bin_size)))
     kernel = np.ones(kernel_size)/kernel_size
@@ -94,21 +101,20 @@ for filename_prefix in filename_prefixes:
     # Plot the delay-based histogram of the full sample, raw and smoothed.
     plot.plot_event_histogram(df_sample_full, df_delays, delay_unit, plot_prefix + "_smooth",
                               in_hist_comp = df_sample_full_smooth, 
-                              in_label_comp = "Rolling Avg. (" + str(kernel_size) + " bins)")
-
-    # Generate domain knowledge on how the histogram should look like.
-    domain_knowledge = calc.compile_domain_knowledge(pulse_freq, 
-                                                     delta_zero, delay_range)
+                              in_label_comp = "Rolling Avg. (" + str(kernel_size) + " bins)",
+                              in_closeup_xlim = closeup_xlim)
     
     # Fit the expectation of the histogram: https://doi.org/10.1063/1.5143786
     t = time()
-    p_opt = calc.calc_g2zero_fit(df_sample_full, df_delays, domain_knowledge)
-    print("Fit for %i parameters: %f s" % (len(p_opt), time() - t))
+    fit_result = calc.calc_g2zero_fit(df_sample_full, df_delays, domain_knowledge)
+    print("Fit for %i parameters: %f s" % (len(fit_result.params), time() - t))
+    print("g2(0) = %f +- %f" % (fit_result.params["amp_ratio"].value, fit_result.params["amp_ratio"].stderr))
     
     # Plot the delay-based histogram of the full sample, raw and fitted.
     plot.plot_event_histogram(df_sample_full, df_delays, delay_unit, plot_prefix + "_fit",
-                              in_hist_comp = calc.func(df_delays, domain_knowledge, *p_opt), 
-                              in_label_comp = "Fit")
+                              in_hist_comp = calc.func(fit_result.params, df_delays, df_sample_full, domain_knowledge), 
+                              in_label_comp = "Fit",
+                              in_closeup_xlim = closeup_xlim)
     
     # # Generate and plot traces of how quality estimates change over time.
     # np.random.seed(random_seed)

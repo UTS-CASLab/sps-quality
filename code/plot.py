@@ -27,7 +27,8 @@ def plot_event_history(in_df_events, in_axis_time, in_save_prefix):
 
 
 def plot_event_histogram(in_hist, in_axis_delays, in_delay_unit, in_save_prefix,
-                         in_hist_comp = None, in_label_comp = None):
+                         in_hist_comp = None, in_label_comp = None,
+                         in_closeup_xlim = None):
     # Plot a delay-based histogram.
     # Optionally compare it against another function on the same axis.
     fig_sample, ax_sample = plt.subplots()
@@ -41,7 +42,13 @@ def plot_event_histogram(in_hist, in_axis_delays, in_delay_unit, in_save_prefix,
     ax_sample.legend()
     fig_sample.savefig(in_save_prefix + "_hist.png",
                        bbox_inches="tight")
-    # plt.close(fig_sample)
+    plt.close(fig_sample)
+    
+    if in_closeup_xlim is not None:
+        ax_sample.set_xlim(np.array(in_closeup_xlim)/in_delay_unit)
+        fig_sample.savefig(in_save_prefix + "_hist_closeup.png",
+                           bbox_inches="tight")
+        plt.close(fig_sample)
 
 
 def plot_traces(in_trace_matrix, in_axis_time, 
