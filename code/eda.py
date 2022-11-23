@@ -8,7 +8,6 @@ Created on Thu Nov 10 16:53:41 2022
 import os
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 
 from time import time
 
@@ -16,13 +15,13 @@ import calc
 import plot
 
 filename_prefixes = [
-    "1p2uW_3000cps_time bin width 128 ps",
-    "2p5uW_4000cps",
-    "4uW_4100cps",
-    "8uW_5100cps",
-    "10uW_6000cps",
-    "10uW_12000cps",
-    "20uW_7000cps",
+    # "1p2uW_3000cps_time bin width 128 ps",
+    # "2p5uW_4000cps",
+    # "4uW_4100cps",
+    # "8uW_5100cps",
+    # "10uW_6000cps",
+    # "10uW_12000cps",
+    # "20uW_7000cps",
     "30uW_7000cps"
     ]
 folder_data = "../data/"
@@ -32,7 +31,7 @@ random_seed = 0
 
 # The number of traces to generate per datafile.
 # Each trace shows how g2(0) estimates change with greater sampling.
-num_traces = 120
+num_traces = 3
 
 # Define how far the bound of several windows should be from its centre.
 # These are used for the quick methods of deriving g2(0).
@@ -116,79 +115,123 @@ for filename_prefix in filename_prefixes:
                               in_label_comp = "Fit",
                               in_closeup_xlim = closeup_xlim)
     
-    # # Generate and plot traces of how quality estimates change over time.
-    # np.random.seed(random_seed)
-    # trace_g2zero = np.zeros([num_traces, len(range_snapshots)])
-    # trace_amp_mpe = np.zeros([num_traces, len(range_snapshots)])
-    # trace_amp_avg = np.zeros([num_traces, len(range_snapshots)])
-    # trace_amp_std = np.zeros([num_traces, len(range_snapshots)])
-    # trace_bg_avg = np.zeros([num_traces, len(range_snapshots)])
-    # trace_bg_std = np.zeros([num_traces, len(range_snapshots)])
-    
-    # trace_g2zero_s = np.zeros([num_traces, len(range_snapshots)])
-    # trace_amp_mpe_s = np.zeros([num_traces, len(range_snapshots)])
-    # trace_amp_avg_s = np.zeros([num_traces, len(range_snapshots)])
-    # trace_amp_std_s = np.zeros([num_traces, len(range_snapshots)])
-    # trace_bg_avg_s = np.zeros([num_traces, len(range_snapshots)])
-    # trace_bg_std_s = np.zeros([num_traces, len(range_snapshots)])
-    
-    # t = time()
-    # for i in range(num_traces):
-    #     order_snapshot = np.random.permutation(range_snapshots)
-    #     hist = np.zeros(df_delays.size)
+    # Load trace data from pickle save files if they exist.
+    do_generate_traces = False
+    try:
+        df_trace_g2zero = pd.read_pickle(save_prefix + "_g2zero.pkl")
+        df_trace_amp_mpe = pd.read_pickle(save_prefix + "_amp_mpe.pkl")
+        df_trace_amp_avg = pd.read_pickle(save_prefix + "_amp_avg.pkl")
+        df_trace_amp_std = pd.read_pickle(save_prefix + "_amp_std.pkl")
+        df_trace_bg_avg = pd.read_pickle(save_prefix + "_bg_avg.pkl")
+        df_trace_bg_std = pd.read_pickle(save_prefix + "_bg_std.pkl")
         
-    #     count_snapshot = 0
-    #     for id_snapshot in order_snapshot:
-    #         hist = hist + df_events[id_snapshot]
-    #         hist_smooth = np.convolve(hist, kernel, mode="same")
+        df_trace_g2zero_s = pd.read_pickle(save_prefix + "_g2zero_smooth.pkl")
+        df_trace_amp_mpe_s = pd.read_pickle(save_prefix + "_amp_mpe_smooth.pkl")
+        df_trace_amp_avg_s = pd.read_pickle(save_prefix + "_amp_avg_smooth.pkl")
+        df_trace_amp_std_s = pd.read_pickle(save_prefix + "_amp_std_smooth.pkl")
+        df_trace_bg_avg_s = pd.read_pickle(save_prefix + "_bg_avg_smooth.pkl")
+        df_trace_bg_std_s = pd.read_pickle(save_prefix + "_bg_std_smooth.pkl")
+        
+        print("%i previously saved traces for seed %i loaded." 
+          % (num_traces, random_seed))
+    except:
+        do_generate_traces = True
+        print("Generating %i traces for seed %i." % (num_traces, random_seed))
     
-    #         g2zero, amp_stats, bg_stats = calc.calc_g2zero_quick(hist,
-    #                                                              delay_bin_size,
-    #                                                              domain_knowledge)
-    #         g2zero_s, amp_stats_s, bg_stats_s = calc.calc_g2zero_quick(hist_smooth,
-    #                                                                    delay_bin_size,
-    #                                                                    domain_knowledge)
-            
-    #         trace_g2zero[i, count_snapshot] = g2zero
-    #         trace_amp_mpe[i, count_snapshot] = amp_stats["mpe"]
-    #         trace_amp_avg[i, count_snapshot] = amp_stats["avg"]
-    #         trace_amp_std[i, count_snapshot] = amp_stats["std"]
-    #         trace_bg_avg[i, count_snapshot] = bg_stats["avg"]
-    #         trace_bg_std[i, count_snapshot] = bg_stats["std"]
-
-    #         trace_g2zero_s[i, count_snapshot] = g2zero_s
-    #         trace_amp_mpe_s[i, count_snapshot] = amp_stats_s["mpe"]
-    #         trace_amp_avg_s[i, count_snapshot] = amp_stats_s["avg"]
-    #         trace_amp_std_s[i, count_snapshot] = amp_stats_s["std"]
-    #         trace_bg_avg_s[i, count_snapshot] = bg_stats_s["avg"]
-    #         trace_bg_std_s[i, count_snapshot] = bg_stats_s["std"]
-            
-    #         count_snapshot += 1
-    # print("%i estimated g2(0) trajectories across %i snapshots: %f s" 
-    #       % (num_traces, len(range_snapshots), time() - t))
-            
-    # plot.plot_traces(trace_g2zero, range_snapshots, plot_prefix, "g2(0)",
-    #                  in_ylim = [0, 1])
-    # plot.plot_traces(trace_amp_mpe, range_snapshots, plot_prefix, "amp_mpe",
-    #                  in_ylim = [0, np.max([np.max(trace_amp_mpe), np.max(trace_amp_mpe_s)])])
-    # plot.plot_traces(trace_amp_avg, range_snapshots, plot_prefix, "amp_avg",
-    #                  in_ylim = [0, np.max([np.max(trace_amp_avg), np.max(trace_amp_avg_s)])])
-    # plot.plot_traces(trace_amp_std, range_snapshots, plot_prefix, "amp_std",
-    #                  in_ylim = [0, np.max([np.max(trace_amp_std), np.max(trace_amp_std_s)])])
-    # plot.plot_traces(trace_bg_avg, range_snapshots, plot_prefix, "bg_avg",
-    #                  in_ylim = [0, np.max([np.max(trace_bg_avg), np.max(trace_bg_avg_s)])])
-    # plot.plot_traces(trace_bg_std, range_snapshots, plot_prefix, "bg_std",
-    #                  in_ylim = [0, np.max([np.max(trace_bg_std), np.max(trace_bg_std_s)])])
     
-    # plot.plot_traces(trace_g2zero_s, range_snapshots, plot_prefix, "g2(0)", "smoothed",
-    #                  in_ylim = [0, 1])
-    # plot.plot_traces(trace_amp_mpe_s, range_snapshots, plot_prefix, "amp_mpe", "smoothed",
-    #                  in_ylim = [0, np.max([np.max(trace_amp_mpe), np.max(trace_amp_mpe_s)])])
-    # plot.plot_traces(trace_amp_avg_s, range_snapshots, plot_prefix, "amp_avg", "smoothed",
-    #                  in_ylim = [0, np.max([np.max(trace_amp_avg), np.max(trace_amp_avg_s)])])
-    # plot.plot_traces(trace_amp_std_s, range_snapshots, plot_prefix, "amp_std", "smoothed",
-    #                  in_ylim = [0, np.max([np.max(trace_amp_std), np.max(trace_amp_std_s)])])
-    # plot.plot_traces(trace_bg_avg_s, range_snapshots, plot_prefix, "bg_avg", "smoothed",
-    #                  in_ylim = [0, np.max([np.max(trace_bg_avg), np.max(trace_bg_avg_s)])])
-    # plot.plot_traces(trace_bg_std_s, range_snapshots, plot_prefix, "bg_std", "smoothed",
-    #                  in_ylim = [0, np.max([np.max(trace_bg_std), np.max(trace_bg_std_s)])])
+    # Generate traces of how quality estimates change over time.
+    if do_generate_traces:
+    
+    
+        np.random.seed(random_seed)
+        df_trace_g2zero = pd.DataFrame(np.zeros([num_traces, len(range_snapshots)]))
+        df_trace_amp_mpe = pd.DataFrame(np.zeros([num_traces, len(range_snapshots)]))
+        df_trace_amp_avg = pd.DataFrame(np.zeros([num_traces, len(range_snapshots)]))
+        df_trace_amp_std = pd.DataFrame(np.zeros([num_traces, len(range_snapshots)]))
+        df_trace_bg_avg = pd.DataFrame(np.zeros([num_traces, len(range_snapshots)]))
+        df_trace_bg_std = pd.DataFrame(np.zeros([num_traces, len(range_snapshots)]))
+        
+        df_trace_g2zero_s = pd.DataFrame(np.zeros([num_traces, len(range_snapshots)]))
+        df_trace_amp_mpe_s = pd.DataFrame(np.zeros([num_traces, len(range_snapshots)]))
+        df_trace_amp_avg_s = pd.DataFrame(np.zeros([num_traces, len(range_snapshots)]))
+        df_trace_amp_std_s = pd.DataFrame(np.zeros([num_traces, len(range_snapshots)]))
+        df_trace_bg_avg_s = pd.DataFrame(np.zeros([num_traces, len(range_snapshots)]))
+        df_trace_bg_std_s = pd.DataFrame(np.zeros([num_traces, len(range_snapshots)]))
+        
+        t = time()
+        for i in range(num_traces):
+            order_snapshot = np.random.permutation(range_snapshots)
+            hist = np.zeros(df_delays.size)
+            
+            count_snapshot = 0
+            for id_snapshot in order_snapshot:
+                hist = hist + df_events[id_snapshot]
+                hist_smooth = np.convolve(hist, kernel, mode="same")
+        
+                g2zero, amp_stats, bg_stats = calc.calc_g2zero_quick(hist,
+                                                                      delay_bin_size,
+                                                                      domain_knowledge)
+                g2zero_s, amp_stats_s, bg_stats_s = calc.calc_g2zero_quick(hist_smooth,
+                                                                            delay_bin_size,
+                                                                            domain_knowledge)
+                
+                df_trace_g2zero.iloc[i, count_snapshot] = g2zero
+                df_trace_amp_mpe.iloc[i, count_snapshot] = amp_stats["mpe"]
+                df_trace_amp_avg.iloc[i, count_snapshot] = amp_stats["avg"]
+                df_trace_amp_std.iloc[i, count_snapshot] = amp_stats["std"]
+                df_trace_bg_avg.iloc[i, count_snapshot] = bg_stats["avg"]
+                df_trace_bg_std.iloc[i, count_snapshot] = bg_stats["std"]
+    
+                df_trace_g2zero_s.iloc[i, count_snapshot] = g2zero_s
+                df_trace_amp_mpe_s.iloc[i, count_snapshot] = amp_stats_s["mpe"]
+                df_trace_amp_avg_s.iloc[i, count_snapshot] = amp_stats_s["avg"]
+                df_trace_amp_std_s.iloc[i, count_snapshot] = amp_stats_s["std"]
+                df_trace_bg_avg_s.iloc[i, count_snapshot] = bg_stats_s["avg"]
+                df_trace_bg_std_s.iloc[i, count_snapshot] = bg_stats_s["std"]
+                
+                count_snapshot += 1
+        print("%i estimated g2(0) trajectories across %i snapshots: %f s" 
+              % (num_traces, len(range_snapshots), time() - t))
+        
+        # Save trace data to pickle files.
+        df_trace_g2zero.to_pickle(save_prefix + "_g2zero.pkl")
+        df_trace_amp_mpe.to_pickle(save_prefix + "_amp_mpe.pkl")
+        df_trace_amp_avg.to_pickle(save_prefix + "_amp_avg.pkl")
+        df_trace_amp_std.to_pickle(save_prefix + "_amp_std.pkl")
+        df_trace_bg_avg.to_pickle(save_prefix + "_bg_avg.pkl")
+        df_trace_bg_std.to_pickle(save_prefix + "_bg_std.pkl")
+        
+        df_trace_g2zero_s.to_pickle(save_prefix + "_g2zero_smooth.pkl")
+        df_trace_amp_mpe_s.to_pickle(save_prefix + "_amp_mpe_smooth.pkl")
+        df_trace_amp_avg_s.to_pickle(save_prefix + "_amp_avg_smooth.pkl")
+        df_trace_amp_std_s.to_pickle(save_prefix + "_amp_std_smooth.pkl")
+        df_trace_bg_avg_s.to_pickle(save_prefix + "_bg_avg_smooth.pkl")
+        df_trace_bg_std_s.to_pickle(save_prefix + "_bg_std_smooth.pkl")
+    
+    
+    # Plot traces for the number of trajectories and random seed chosen.
+    plot.plot_traces(df_trace_g2zero, range_snapshots, plot_prefix, "g2(0)",
+                      in_ylim = [0, 1])
+    plot.plot_traces(df_trace_amp_mpe, range_snapshots, plot_prefix, "amp_mpe",
+                      in_ylim = [0, np.max([df_trace_amp_mpe.max().max(), df_trace_amp_mpe_s.max().max()])])
+    plot.plot_traces(df_trace_amp_avg, range_snapshots, plot_prefix, "amp_avg",
+                      in_ylim = [0, np.max([df_trace_amp_avg.max().max(), df_trace_amp_avg_s.max().max()])])
+    plot.plot_traces(df_trace_amp_std, range_snapshots, plot_prefix, "amp_std",
+                      in_ylim = [0, np.max([df_trace_amp_std.max().max(), df_trace_amp_std_s.max().max()])])
+    plot.plot_traces(df_trace_bg_avg, range_snapshots, plot_prefix, "bg_avg",
+                      in_ylim = [0, np.max([df_trace_bg_avg.max().max(), df_trace_bg_avg_s.max().max()])])
+    plot.plot_traces(df_trace_bg_std, range_snapshots, plot_prefix, "bg_std",
+                      in_ylim = [0, np.max([df_trace_bg_std.max().max(), df_trace_bg_std_s.max().max()])])
+    
+    plot.plot_traces(df_trace_g2zero_s, range_snapshots, plot_prefix, "g2(0)", "smoothed",
+                      in_ylim = [0, 1])
+    plot.plot_traces(df_trace_amp_mpe_s, range_snapshots, plot_prefix, "amp_mpe", "smoothed",
+                      in_ylim = [0, np.max([df_trace_amp_mpe.max().max(), df_trace_amp_mpe_s.max().max()])])
+    plot.plot_traces(df_trace_amp_avg_s, range_snapshots, plot_prefix, "amp_avg", "smoothed",
+                      in_ylim = [0, np.max([df_trace_amp_avg.max().max(), df_trace_amp_avg_s.max().max()])])
+    plot.plot_traces(df_trace_amp_std_s, range_snapshots, plot_prefix, "amp_std", "smoothed",
+                      in_ylim = [0, np.max([df_trace_amp_std.max().max(), df_trace_amp_std_s.max().max()])])
+    plot.plot_traces(df_trace_bg_avg_s, range_snapshots, plot_prefix, "bg_avg", "smoothed",
+                      in_ylim = [0, np.max([df_trace_bg_avg.max().max(), df_trace_bg_avg_s.max().max()])])
+    plot.plot_traces(df_trace_bg_std_s, range_snapshots, plot_prefix, "bg_std", "smoothed",
+                      in_ylim = [0, np.max([df_trace_bg_std.max().max(), df_trace_bg_std_s.max().max()])])
