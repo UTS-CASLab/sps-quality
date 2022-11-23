@@ -208,6 +208,11 @@ for filename_prefix in filename_prefixes:
         df_trace_bg_avg_s.to_pickle(save_prefix + "_bg_avg_smooth.pkl")
         df_trace_bg_std_s.to_pickle(save_prefix + "_bg_std_smooth.pkl")
     
+    # Calculate relative standard deviations (RSDs).
+    df_trace_amp_rsd = df_trace_amp_std/df_trace_amp_avg
+    df_trace_bg_rsd = df_trace_bg_std/df_trace_bg_avg
+    df_trace_amp_rsd_s = df_trace_amp_std_s/df_trace_amp_avg_s
+    df_trace_bg_rsd_s = df_trace_bg_std_s/df_trace_bg_avg_s
     
     # Plot traces for the number of trajectories and random seed chosen.
     plot.plot_traces(df_trace_g2zero, range_snapshots, plot_prefix, "g2(0)",
@@ -223,6 +228,11 @@ for filename_prefix in filename_prefixes:
     plot.plot_traces(df_trace_bg_std, range_snapshots, plot_prefix, "bg_std",
                       in_ylim = [0, np.max([df_trace_bg_std.max().max(), df_trace_bg_std_s.max().max()])])
     
+    plot.plot_traces(df_trace_amp_rsd, range_snapshots, plot_prefix, "amp_rsd",
+                      in_ylim = [0, 1])
+    plot.plot_traces(df_trace_bg_rsd, range_snapshots, plot_prefix, "bg_rsd",
+                      in_ylim = [0, 1])
+    
     plot.plot_traces(df_trace_g2zero_s, range_snapshots, plot_prefix, "g2(0)", "smoothed",
                       in_ylim = [0, 1])
     plot.plot_traces(df_trace_amp_mpe_s, range_snapshots, plot_prefix, "amp_mpe", "smoothed",
@@ -235,3 +245,8 @@ for filename_prefix in filename_prefixes:
                       in_ylim = [0, np.max([df_trace_bg_avg.max().max(), df_trace_bg_avg_s.max().max()])])
     plot.plot_traces(df_trace_bg_std_s, range_snapshots, plot_prefix, "bg_std", "smoothed",
                       in_ylim = [0, np.max([df_trace_bg_std.max().max(), df_trace_bg_std_s.max().max()])])
+    
+    plot.plot_traces(df_trace_amp_rsd_s, range_snapshots, plot_prefix, "amp_rsd",
+                      in_ylim = [0, 1])
+    plot.plot_traces(df_trace_bg_rsd_s, range_snapshots, plot_prefix, "bg_rsd",
+                      in_ylim = [0, 1])
