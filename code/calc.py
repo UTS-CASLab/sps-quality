@@ -70,8 +70,11 @@ def calc_g2zero_quick(in_df_sample, in_bin_size, in_knowledge):
     
     # Calculate the 'quality' of the quantum dot.
     g2zero = amp_mpe/amp_avg
+    g2zero_stats = {"avg": amp_mpe/amp_avg,
+                    "low": (amps_raw[id_mpe] - bg_high)/(np.max(amps_raw) - bg_high),
+                    "high": (amps_raw[id_mpe] - bg_low)/(np.min(amps_raw) - bg_low)}
     
-    return g2zero, amp_stats, bg_stats
+    return g2zero_stats, amp_stats, bg_stats
 
 # Define the core fitting function for the delay histogram.
 # Is based on Eq. (2) of: https://doi.org/10.1063/1.5143786

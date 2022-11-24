@@ -216,37 +216,37 @@ for filename_prefix in filename_prefixes:
     
     # Plot traces for the number of trajectories and random seed chosen.
     plot.plot_traces(df_trace_g2zero, range_snapshots, plot_prefix, "g2(0)",
-                      in_ylim = [0, 1])
+                     in_ylim = [0, 1])
     plot.plot_traces(df_trace_amp_mpe, range_snapshots, plot_prefix, "amp_mpe",
-                      in_ylim = [0, np.max([df_trace_amp_mpe.max().max(), df_trace_amp_mpe_s.max().max()])])
+                     in_ylim = [0, np.max([df_trace_amp_mpe.max().max(), df_trace_amp_mpe_s.max().max()])])
     plot.plot_traces(df_trace_amp_avg, range_snapshots, plot_prefix, "amp_avg",
-                      in_ylim = [0, np.max([df_trace_amp_avg.max().max(), df_trace_amp_avg_s.max().max()])])
+                     in_ylim = [0, np.max([df_trace_amp_avg.max().max(), df_trace_amp_avg_s.max().max()])])
     plot.plot_traces(df_trace_amp_std, range_snapshots, plot_prefix, "amp_std",
-                      in_ylim = [0, np.max([df_trace_amp_std.max().max(), df_trace_amp_std_s.max().max()])])
+                     in_ylim = [0, np.max([df_trace_amp_std.max().max(), df_trace_amp_std_s.max().max()])])
     plot.plot_traces(df_trace_bg_avg, range_snapshots, plot_prefix, "bg_avg",
-                      in_ylim = [0, np.max([df_trace_bg_avg.max().max(), df_trace_bg_avg_s.max().max()])])
+                     in_ylim = [0, np.max([df_trace_bg_avg.max().max(), df_trace_bg_avg_s.max().max()])])
     plot.plot_traces(df_trace_bg_std, range_snapshots, plot_prefix, "bg_std",
-                      in_ylim = [0, np.max([df_trace_bg_std.max().max(), df_trace_bg_std_s.max().max()])])
+                     in_ylim = [0, np.max([df_trace_bg_std.max().max(), df_trace_bg_std_s.max().max()])])
     
     plot.plot_traces(df_trace_amp_rsd, range_snapshots, plot_prefix, "amp_rsd",
-                      in_ylim = [0, 1])
+                     in_ylim = [0, 1])
     plot.plot_traces(df_trace_bg_rsd, range_snapshots, plot_prefix, "bg_rsd",
-                      in_ylim = [0, 1])
+                     in_ylim = [0, 1])
     
     plot.plot_traces(df_trace_g2zero_s, range_snapshots, plot_prefix, "g2(0)", "smoothed",
-                      in_ylim = [0, 1])
+                     in_ylim = [0, 1])
     plot.plot_traces(df_trace_amp_mpe_s, range_snapshots, plot_prefix, "amp_mpe", "smoothed",
-                      in_ylim = [0, np.max([df_trace_amp_mpe.max().max(), df_trace_amp_mpe_s.max().max()])])
+                     in_ylim = [0, np.max([df_trace_amp_mpe.max().max(), df_trace_amp_mpe_s.max().max()])])
     plot.plot_traces(df_trace_amp_avg_s, range_snapshots, plot_prefix, "amp_avg", "smoothed",
-                      in_ylim = [0, np.max([df_trace_amp_avg.max().max(), df_trace_amp_avg_s.max().max()])])
+                     in_ylim = [0, np.max([df_trace_amp_avg.max().max(), df_trace_amp_avg_s.max().max()])])
     plot.plot_traces(df_trace_amp_std_s, range_snapshots, plot_prefix, "amp_std", "smoothed",
-                      in_ylim = [0, np.max([df_trace_amp_std.max().max(), df_trace_amp_std_s.max().max()])])
+                     in_ylim = [0, np.max([df_trace_amp_std.max().max(), df_trace_amp_std_s.max().max()])])
     plot.plot_traces(df_trace_bg_avg_s, range_snapshots, plot_prefix, "bg_avg", "smoothed",
-                      in_ylim = [0, np.max([df_trace_bg_avg.max().max(), df_trace_bg_avg_s.max().max()])])
+                     in_ylim = [0, np.max([df_trace_bg_avg.max().max(), df_trace_bg_avg_s.max().max()])])
     plot.plot_traces(df_trace_bg_std_s, range_snapshots, plot_prefix, "bg_std", "smoothed",
-                      in_ylim = [0, np.max([df_trace_bg_std.max().max(), df_trace_bg_std_s.max().max()])])
+                     in_ylim = [0, np.max([df_trace_bg_std.max().max(), df_trace_bg_std_s.max().max()])])
     
     plot.plot_traces(df_trace_amp_rsd_s, range_snapshots, plot_prefix, "amp_rsd",
-                      in_ylim = [0, 1])
+                     in_ylim = [0, 1])
     plot.plot_traces(df_trace_bg_rsd_s, range_snapshots, plot_prefix, "bg_rsd",
-                      in_ylim = [0, 1])
+                     in_ylim = [0, 1])
