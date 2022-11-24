@@ -8,7 +8,6 @@ Created on Wed Nov 16 12:52:15 2022
 import matplotlib.pyplot as plt
 import numpy as np
 
-from copy import copy
 import numpy.matlib
 
 def plot_event_history(in_df_events, in_axis_time, in_save_prefix):

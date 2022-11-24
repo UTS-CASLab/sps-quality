@@ -44,35 +44,41 @@ def calc_g2zero_quick(in_df_sample, in_bin_size, in_knowledge):
             id_bg_sample = round((delay_start + (i-1/2)*pulse_period)/in_bin_size)
             bg_samples[i-1] = in_df_sample[id_bg_sample]
 
+    # For rigour, generate a 2D matrix of g2(0) estimates.
+    # They will depend on the raw amplitude and raw background samples.            
+    # g2zero_estimates = np.zeros((n_peaks-1)*(n_peaks-1))   
+    amp_raw_mpe = amps_raw[id_mpe]
+    amps_raw.mask[id_mpe] = True
+    bg_sample_matrix = np.matlib.repmat(bg_samples, (n_peaks-1), 1)
+    amps_raw_matrix = np.transpose(np.matlib.repmat(amps_raw.compressed(), (n_peaks-1), 1))
+    g2zero_estimates = ((amp_raw_mpe - bg_sample_matrix)/(amps_raw_matrix - bg_sample_matrix)).flatten()
+    g2zero_stats = {"avg": np.mean(g2zero_estimates),
+                    "std": np.std(g2zero_estimates),
+                    "min": np.min(g2zero_estimates),
+                    "max": np.max(g2zero_estimates)}
+
     # Calculate background statistics, especially the average.
     bg_avg = np.mean(bg_samples)
     bg_std = np.std(bg_samples)
-    bg_low = np.min(bg_samples)
-    bg_high = np.max(bg_samples)
+    bg_min = np.min(bg_samples)
+    bg_max = np.max(bg_samples)
     bg_stats = {"avg": bg_avg,
                 "std": bg_std,
-                "low": bg_low,
-                "high": bg_high}
+                "min": bg_min,
+                "max": bg_max}
     
     # Calculate amplitude statistics, correcting for the background.
     # Mask out the MPE peak when processing the other peaks.
-    amp_mpe = amps_raw[id_mpe] - bg_avg
-    amps_raw.mask[id_mpe] = True
+    amp_mpe = amp_raw_mpe - bg_avg
     amp_avg = np.mean(amps_raw) - bg_avg
     amp_std = np.std(amps_raw)
-    amp_low = np.min(amps_raw) - bg_avg
-    amp_high = np.max(amps_raw) - bg_avg
+    amp_min = np.min(amps_raw) - bg_avg
+    amp_max = np.max(amps_raw) - bg_avg
     amp_stats = {"avg": amp_avg,
                  "std": amp_std,
-                 "low": amp_low,
-                 "high": amp_high,
+                 "min": amp_min,
+                 "max": amp_max,
                  "mpe": amp_mpe}
-    
-    # Calculate the 'quality' of the quantum dot.
-    g2zero = amp_mpe/amp_avg
-    g2zero_stats = {"avg": amp_mpe/amp_avg,
-                    "low": (amps_raw[id_mpe] - bg_high)/(np.max(amps_raw) - bg_high),
-                    "high": (amps_raw[id_mpe] - bg_low)/(np.min(amps_raw) - bg_low)}
     
     return g2zero_stats, amp_stats, bg_stats
 
