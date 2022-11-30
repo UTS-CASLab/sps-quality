@@ -238,6 +238,20 @@ for filename_prefix in filename_prefixes:
                      in_extra_colors = ["purple"], 
                      in_extra_labels = ["g2(0) at %i s (smooth est.)" % (len(range_snapshots)*snapshot_bin_size)],
                      in_ylim = [0, 1])
+    plot.plot_traces(df_trace_g2zero["avg"], range_snapshots, plot_prefix, "g2(0)_avg",
+                     in_extra_metrics = [[g2l_min, g2l_avg - g2l_std, g2l_avg, g2l_avg + g2l_std, g2l_max]], 
+                     in_extra_colors = ["purple"], 
+                     in_extra_labels = ["g2(0) at %i s (raw est.)" % (len(range_snapshots)*snapshot_bin_size)],
+                     in_ylim = [0, 1], do_mean_trace_instead = True)
+    plot.plot_traces(df_trace_g2zero_s["avg"], range_snapshots, plot_prefix, "g2(0)_avg", "smoothed",
+                     in_extra_metrics = [[g2ls_min, g2ls_avg - g2ls_std, g2ls_avg, g2ls_avg + g2ls_std, g2ls_max]], 
+                     in_extra_colors = ["purple"], 
+                     in_extra_labels = ["g2(0) at %i s (smooth est.)" % (len(range_snapshots)*snapshot_bin_size)],
+                     in_ylim = [0, 1], do_mean_trace_instead = True)
+    # plot.plot_traces_mean(df_trace_g2zero["avg"], range_snapshots, plot_prefix, "g2(0)_avg",
+    #                       in_ylim = [0, 1])
+    # plot.plot_traces_mean(df_trace_g2zero_s["avg"], range_snapshots, plot_prefix, "g2(0)_avg", "smoothed",
+    #                       in_ylim = [0, 1])
     plot.plot_traces(df_trace_g2zero["std"], range_snapshots, plot_prefix, "g2(0)_std",
                      in_ylim = [0, 1])
     plot.plot_traces(df_trace_g2zero_s["std"], range_snapshots, plot_prefix, "g2(0)_std", "smoothed",

@@ -135,13 +135,13 @@ def calc_g2zero_fit(in_df_sample, in_df_delays, in_knowledge):
     # Refine amplitude fit with the least-squares method.
     # Then run a five-parameter least-squares fit, just for the errors.
     fitted_params = minimize(func, params, args=(in_df_delays, in_df_sample, in_knowledge, True), 
-                             method="nelder_mead")
+                             method="nelder_mead", calc_covar=False)
 
     fitted_params.params["delay_shift"].vary = False
     fitted_params.params["bg"].vary = False
     fitted_params.params["decay_peak"].vary = False
     fitted_params = minimize(func, fitted_params.params, args=(in_df_delays, in_df_sample, in_knowledge, True), 
-                             method="least_squares")
+                             method="least_squares", calc_covar=False)
     
     fitted_params.params["delay_shift"].vary = True
     fitted_params.params["bg"].vary = True
