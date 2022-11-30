@@ -106,8 +106,11 @@ for filename_prefix in filename_prefixes:
     # Fit the expectation of the histogram: https://doi.org/10.1063/1.5143786
     t = time()
     fit_result = calc.calc_g2zero_fit(df_sample_full, df_delays, domain_knowledge)
+    g2lf_avg = fit_result.params["amp_ratio"].value
+    g2lf_std = fit_result.params["amp_ratio"].stderr
     print("Fit for %i parameters: %f s" % (len(fit_result.params), time() - t))
-    print("g2(0) = %f +- %f" % (fit_result.params["amp_ratio"].value, fit_result.params["amp_ratio"].stderr))
+    # print("g2(0) = %f +- %f" % (g2lf_avg, g2lf_std))
+    fit_result.params.pretty_print()
     
     # Plot the delay-based histogram of the full sample, raw and fitted.
     plot.plot_event_histogram(df_sample_full, df_delays, delay_unit, plot_prefix + "_fit",
@@ -205,12 +208,40 @@ for filename_prefix in filename_prefixes:
     df_trace_amp_s["rsd"] = df_trace_amp_s["std"]/df_trace_amp_s["avg"]
     df_trace_bg_s["rsd"] = df_trace_bg_s["std"]/df_trace_bg_s["avg"]
     
+    # Compare final g2(0) values across different estimation/fitting methods.
+    g2l_avg = df_trace_g2zero["avg"].iloc[0,-1]
+    g2l_std = df_trace_g2zero["std"].iloc[0,-1]
+    g2l_min = df_trace_g2zero["min"].iloc[0,-1]
+    g2l_max = df_trace_g2zero["max"].iloc[0,-1]
+    g2ls_avg = df_trace_g2zero_s["avg"].iloc[0,-1]
+    g2ls_std = df_trace_g2zero_s["std"].iloc[0,-1]
+    g2ls_min = df_trace_g2zero_s["min"].iloc[0,-1]
+    g2ls_max = df_trace_g2zero_s["max"].iloc[0,-1]
+    
+    
+    plot.plot_g2zero_comparison(in_spreads = [[g2l_min, g2l_avg - g2l_std, g2l_avg, g2l_avg + g2l_std, g2l_max],
+                                              [g2ls_min, g2ls_avg - g2ls_std, g2ls_avg, g2ls_avg + g2ls_std, g2ls_max],
+                                              [g2lf_avg - g2lf_std, g2lf_avg, g2lf_avg + g2lf_std]], 
+                                in_spread_labels = ["Quick Est. (Raw)", 
+                                                    "Quick Est. (Smoothed)",
+                                                    "Function Fit"], 
+                                in_save_prefix = plot_prefix)
+
     # Plot traces for the number of trajectories and random seed chosen.
-    for stat_label in ["avg", "std"]:
-        plot.plot_traces(df_trace_g2zero[stat_label], range_snapshots, plot_prefix, "g2(0)_" + stat_label,
-                         in_ylim = [0, 1])
-        plot.plot_traces(df_trace_g2zero_s[stat_label], range_snapshots, plot_prefix, "g2(0)_" + stat_label, "smoothed",
-                         in_ylim = [0, 1])
+    plot.plot_traces(df_trace_g2zero["avg"], range_snapshots, plot_prefix, "g2(0)_avg",
+                     in_extra_metrics = [[g2l_min, g2l_avg - g2l_std, g2l_avg, g2l_avg + g2l_std, g2l_max]], 
+                     in_extra_colors = ["purple"], 
+                     in_extra_labels = ["g2(0) at %i s (raw est.)" % (len(range_snapshots)*snapshot_bin_size)],
+                     in_ylim = [0, 1])
+    plot.plot_traces(df_trace_g2zero_s["avg"], range_snapshots, plot_prefix, "g2(0)_avg", "smoothed",
+                     in_extra_metrics = [[g2ls_min, g2ls_avg - g2ls_std, g2ls_avg, g2ls_avg + g2ls_std, g2ls_max]], 
+                     in_extra_colors = ["purple"], 
+                     in_extra_labels = ["g2(0) at %i s (smooth est.)" % (len(range_snapshots)*snapshot_bin_size)],
+                     in_ylim = [0, 1])
+    plot.plot_traces(df_trace_g2zero["std"], range_snapshots, plot_prefix, "g2(0)_std",
+                     in_ylim = [0, 1])
+    plot.plot_traces(df_trace_g2zero_s["std"], range_snapshots, plot_prefix, "g2(0)_std", "smoothed",
+                     in_ylim = [0, 1])
     
     # plot.plot_traces(df_trace_g2zero["std"], range_snapshots, plot_prefix, "g2(0)_std",
     #                  in_ylim = [0, np.max([df_trace_g2zero["std"].max().max(), df_trace_g2zero_s["std"].max().max()])])

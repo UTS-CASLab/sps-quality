@@ -133,10 +133,21 @@ def calc_g2zero_fit(in_df_sample, in_df_delays, in_knowledge):
     
     # Run a five-parameter fit with the Nelder Mead method.
     # Refine amplitude fit with the least-squares method.
-    fitted_params = minimize(func, params, args=(in_df_delays, in_df_sample, in_knowledge, True), method="nelder_mead")
+    # Then run a five-parameter least-squares fit, just for the errors.
+    fitted_params = minimize(func, params, args=(in_df_delays, in_df_sample, in_knowledge, True), 
+                             method="nelder_mead")
+
     fitted_params.params["delay_shift"].vary = False
     fitted_params.params["bg"].vary = False
     fitted_params.params["decay_peak"].vary = False
-    fitted_params = minimize(func, fitted_params.params, args=(in_df_delays, in_df_sample, in_knowledge, True), method="least_squares")
+    fitted_params = minimize(func, fitted_params.params, args=(in_df_delays, in_df_sample, in_knowledge, True), 
+                             method="least_squares")
+    
+    fitted_params.params["delay_shift"].vary = True
+    fitted_params.params["bg"].vary = True
+    fitted_params.params["decay_peak"].vary = True
+    fitted_params = minimize(func, fitted_params.params, args=(in_df_delays, in_df_sample, in_knowledge, True), 
+                             method="least_squares")
+    # fitted_params.params.pretty_print()
     
     return fitted_params

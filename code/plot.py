@@ -50,6 +50,54 @@ def plot_event_histogram(in_hist, in_axis_delays, in_delay_unit, in_save_prefix,
         plt.close(fig_sample)
 
 
+def plot_g2zero_comparison(in_spreads, in_spread_labels, in_save_prefix):
+
+    fig_comp, ax_comp = plt.subplots()
+    
+    # The spreads argument must be a list of sub-lists.
+    # Each sub-list of values is drawn as a column of points in the plot.
+    # The sub-list itself should have 1, 3 or 5 values.
+    # The middle value is the mean and the adjacent values are one std away.
+    # The outer values are the lowest and highest values of the metric.
+    # Extra labels must have one item per each sub-list.
+    
+    c = 0
+    label_avg = "Avg"
+    label_std = "Avg +- Std"
+    label_min = "Min"
+    label_max = "Max"
+    for spread in in_spreads:
+        num_vals = len(spread)
+        id_mean = int((num_vals - 1)/2)
+        ax_comp.plot(c, spread[id_mean], linestyle = "None", 
+                     color = "k", marker = "x", label = label_avg)
+        label_avg = None
+        if num_vals > 1:
+            id_std_low = id_mean - 1
+            id_std_high = id_mean + 1
+            ax_comp.plot(c, spread[id_std_low], linestyle = "None", 
+                         color = "k", marker = "+", label = label_std)
+            ax_comp.plot(c, spread[id_std_high], linestyle = "None",
+                         color = "k", marker = "+")
+            label_std = None
+        if num_vals > 3:
+            ax_comp.plot(c, spread[-1], linestyle = "None",
+                         color = "k", marker = "1", label = label_max)
+            ax_comp.plot(c, spread[0], linestyle = "None",
+                         color = "k", marker = "2", label = label_min)
+            label_min = None
+            label_max = None
+        c += 1
+    
+    ax_comp.set_xlim([-0.5, c - 0.5])
+    ax_comp.set_xticks(range(c))
+    ax_comp.set_xticklabels(in_spread_labels, rotation=45)
+    
+    ax_comp.legend()
+    fig_comp.savefig(in_save_prefix + "_g2zero_comparison.png", bbox_inches="tight")
+    plt.close(fig_comp)
+
+
 # TODO: Standardise code to work with dataframes or numpy arrays.
 def plot_traces(in_trace_matrix, in_axis_time, 
                 in_save_prefix, in_var_name, in_save_suffix = None,
@@ -78,26 +126,26 @@ def plot_traces(in_trace_matrix, in_axis_time,
         c = 0
         for metric_spread in in_extra_metrics:
             num_vals = len(metric_spread)
-            id_mean = (num_vals - 1)/2
+            id_mean = int((num_vals - 1)/2)
             label_metric = in_extra_labels[c]
             if num_vals > 1:
                 id_std_low = id_mean - 1
                 id_std_high = id_mean + 1
-                ax_traces.plot([xlim, xlim],
-                               [[metric_spread[id_std_low], metric_spread[id_std_low]],
-                                [metric_spread[id_std_high], metric_spread[id_std_high]]],
+                ax_traces.plot(xlim,
+                               [[metric_spread[id_std_low], metric_spread[id_std_high]],
+                                [metric_spread[id_std_low], metric_spread[id_std_high]]],
                                color = in_extra_colors[c], linestyle = "--")
                 label_metric += " + std"
             if num_vals > 3:
-                ax_traces.plot([xlim, xlim],
-                               [[metric_spread[0], metric_spread[0]],
-                                [metric_spread[-1], metric_spread[-1]]],
+                ax_traces.plot(xlim,
+                               [[metric_spread[0], metric_spread[-1]],
+                                [metric_spread[0], metric_spread[-1]]],
                                color = in_extra_colors[c], linestyle = ":")
                 label_metric += " + extrema"
             ax_traces.plot(xlim, 
                            [metric_spread[id_mean], metric_spread[id_mean]], 
                            color = in_extra_colors[c], linestyle = "-",
-                           label = in_extra_labels[c])
+                           label = label_metric)
             c += 1
             
     ax_traces.set_xlabel("Total Detection Time (s)")
