@@ -24,14 +24,32 @@ def rchop(s, suffix):
         return s[:-len(suffix)]
     return s
 
+def filename_neaten(in_filename):
+    # Fix certain typos in a raw-data filename.
+    # Used prior to generating filename prefixes for loading and saving.
+    filename = in_filename.replace("_ ex", "_ex").replace(" ulsed", " pulsed")
+    return filename
+
+# Generate one filename prefix per single experiment.
+# The prefix may need to identify several datasets.
 full_filename_prefixes = set()
 for root, subdirs, files in os.walk(folder_data):
     for filename in files:
         file_path = os.path.join(root, filename).replace(folder_data, "", 1)
         if file_path.endswith(".txt"):
-            prefix = rchop(file_path, ".txt")
+            prefix = rchop(filename_neaten(file_path), ".txt")
             prefix = rchop(prefix.rstrip(string.digits).rstrip(" _"), "part").rstrip(" _")
             prefix = rchop(prefix.rstrip(string.digits).rstrip(" _"), "day").rstrip(" _")
+            prefix = rchop(prefix.rstrip(string.digits).rstrip(" _"), "test").rstrip(" _")
+            # Custom file fusions.
+            ending_cuts = [["10uW_12000cps", "_12000cps"],
+                           ["10uW_6000cps", "_6000cps"],
+                           ["auto_0p22mW_5K_ex1231nm pulsed_1319p4nm-1323p6nm", "_1319p4nm-1323p6nm"],
+                           ["auto_0p22mW_5K_ex1231nm pulsed_1319p3nm-1323p55nm", "_1319p3nm-1323p55nm"],
+                           ["auto_0p25mW_5K_ex1120nm pulsed_1319p3nm-1323p7nm", "_1319p3nm-1323p7nm"],
+                           ["auto_0p25mW_5K_ex1120nm pulsed_1319p4nm-1323p7nm", "_1319p4nm-1323p7nm"]]
+            for ending, cut in ending_cuts:
+                if prefix.endswith(ending): prefix = rchop(prefix, cut)
             full_filename_prefixes.add(prefix)
 # filename_prefixes = [
 #     "1p2uW_3000cps_time bin width 128 ps",
@@ -84,7 +102,7 @@ for full_filename_prefix in full_filename_prefixes:
     df_delays = None
     df_events = None
     for filename_data in os.listdir(folder_data + folder_prefix):
-        if filename_data.startswith(filename_prefix):
+        if filename_neaten(filename_data).startswith(filename_prefix):
             df = pd.read_csv(folder_data + os.path.join(folder_prefix, filename_data), sep="\t", header=None)
             if df_events is None:
                 print("Loading into dataframe: %s" % folder_data + os.path.join(folder_prefix, filename_data))
