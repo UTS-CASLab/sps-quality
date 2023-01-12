@@ -18,7 +18,7 @@ def func_pulsed(params, x, y, return_fit_error = False):
     # delay_mpe: the delay value at which multi-photon emission (MPE) occurs
     # amp_env: amplitude of the envelope, i.e. the non-MPE peaks
     # amp_ratio: the ratio of the MPE peak to the envelope amplitude, i.e. g2(0)
-    # decay_env: the decay scale for the envelope amplitude 
+    # factor_env: the inverted decay scale for the envelope amplitude 
     # decay_peak: the decay scale for an individual peak
     
     bg = params["bg"]
@@ -26,14 +26,14 @@ def func_pulsed(params, x, y, return_fit_error = False):
     delay_mpe = params["delay_mpe"]
     amp_env = params["amp_env"]
     amp_ratio = params["amp_ratio"]
-    decay_env = params["decay_env"]
+    factor_env = params["factor_env"]
     decay_peak = params["decay_peak"]
     
     tau = x - delay_mpe
     tau_m = np.mod(tau, period_pulse)
     
-    fit = bg + amp_env*np.exp(-decay_env*np.abs(tau)) * (np.cosh(decay_peak*(tau_m - period_pulse/2)) / np.sinh(decay_peak*period_pulse/2) 
-       - (1 - amp_ratio)*np.exp(-decay_peak*np.abs(tau)))
+    fit = bg + amp_env*np.exp(-factor_env*np.abs(tau)) * (np.cosh((tau_m - period_pulse/2)/decay_peak) / np.sinh(period_pulse/(2*decay_peak)) 
+       - (1 - amp_ratio)*np.exp(-np.abs(tau)/decay_peak))
     
     if return_fit_error:
         return fit - y
@@ -58,10 +58,10 @@ def estimate_g2zero_pulsed(in_sr_sample, in_sr_delays, in_knowns):
                min = in_knowns["delay_mpe"][0], max = in_knowns["delay_mpe"][-1])
     params.add("amp_env", value = amp_peaked, min = 0, max = 1)
     params.add("amp_ratio", value = 0.5, min = 0, max = 1)
-    params.add("decay_env", value = 0, min = 0, max = np.inf, vary = False)
-    params.add("decay_peak", value = 1/step_delays, min = 0, max = 10/step_delays)
+    params.add("factor_env", value = 0, min = 0, max = np.inf, vary = False)
+    params.add("decay_peak", value = step_delays, min = step_delays/10, max = np.inf)
     
-    # Run a five-parameter fit with the Nelder Mead method.
+    # Run a five-parameter fit with least-squares then Nelder Mead method.
     # Refine amplitude fit with the least-squares method.
     # Then run a five-parameter least-squares fit, just for the errors.
     fitted_params = minimize(func_pulsed, params, args=(in_sr_delays, in_sr_sample, True), 
