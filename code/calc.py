@@ -40,9 +40,9 @@ def func_pulsed(params, x, y, return_fit_error = False):
     else:
         return fit
     
-def estimate_g2zero_pulsed(in_sr_sample, in_sr_delays):
+def estimate_g2zero_pulsed(in_sr_sample, in_sr_delays, in_knowns):
     
-    period_pulse = 1/80e6
+    period_pulse = in_knowns["period_pulse"]
     range_delays = in_sr_delays[in_sr_delays.size-1] - in_sr_delays[0]
     step_delays = in_sr_delays[1] - in_sr_delays[0]
     
@@ -54,7 +54,8 @@ def estimate_g2zero_pulsed(in_sr_sample, in_sr_delays):
     params = Parameters()
     params.add("bg", value = amp_uniform, min = 0, max = 1)
     params.add("period_pulse", value = period_pulse, min = 0, max = np.inf, vary = False)
-    params.add("delay_mpe", value = 60e-9, min = 55e-9, max = 65e-9)
+    params.add("delay_mpe", value = np.mean(in_knowns["delay_mpe"]), 
+               min = in_knowns["delay_mpe"][0], max = in_knowns["delay_mpe"][-1])
     params.add("amp_env", value = amp_peaked, min = 0, max = 1)
     params.add("amp_ratio", value = 0.5, min = 0, max = 1)
     params.add("decay_env", value = 0, min = 0, max = np.inf, vary = False)
@@ -64,6 +65,8 @@ def estimate_g2zero_pulsed(in_sr_sample, in_sr_delays):
     # Refine amplitude fit with the least-squares method.
     # Then run a five-parameter least-squares fit, just for the errors.
     fitted_params = minimize(func_pulsed, params, args=(in_sr_delays, in_sr_sample, True), 
+                              method="least_squares", calc_covar=False)
+    fitted_params = minimize(func_pulsed, fitted_params.params, args=(in_sr_delays, in_sr_sample, True), 
                               method="nelder_mead", calc_covar=False)
 
     fitted_params.params["delay_mpe"].vary = False
@@ -76,7 +79,7 @@ def estimate_g2zero_pulsed(in_sr_sample, in_sr_delays):
     fitted_params.params["bg"].vary = True
     fitted_params.params["decay_peak"].vary = True
     fitted_params = minimize(func_pulsed, fitted_params.params, args=(in_sr_delays, in_sr_sample, True), 
-                             method="least_squares")
+                              method="least_squares")
     # fitted_params.params.pretty_print()
     
     return fitted_params

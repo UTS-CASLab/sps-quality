@@ -27,7 +27,7 @@ def plot_event_history(in_df_events, in_axis_time, in_save_prefix):
 
 def plot_event_histogram(in_hist, in_axis_delays, in_delay_unit, in_save_prefix,
                          in_hist_comp = None, in_label_comp = None,
-                         in_closeup_xlim = None):
+                         in_xlim_closeup = None):
     # Plot a delay-based histogram.
     # Optionally compare it against another function on the same axis.
     fig_sample, ax_sample = plt.subplots()
@@ -37,14 +37,14 @@ def plot_event_histogram(in_hist, in_axis_delays, in_delay_unit, in_save_prefix,
                        label=in_label_comp)
     ax_sample.set_xlabel("Delay (%ss)" % in_delay_unit)
     events_per_bin = (in_axis_delays[1]-in_axis_delays[0])/in_delay_unit
-    ax_sample.set_ylabel("Events per bin (%s %ss)" % (events_per_bin, in_delay_unit))
+    ax_sample.set_ylabel("Event probability per bin (%s %ss)" % (events_per_bin, in_delay_unit))
     ax_sample.legend()
     fig_sample.savefig(in_save_prefix + "_hist.png",
                        bbox_inches="tight")
     plt.close(fig_sample)
     
-    if in_closeup_xlim is not None:
-        ax_sample.set_xlim(np.array(in_closeup_xlim)/in_delay_unit)
+    if in_xlim_closeup is not None:
+        ax_sample.set_xlim(np.array(in_xlim_closeup)/in_delay_unit)
         fig_sample.savefig(in_save_prefix + "_hist_closeup.png",
                            bbox_inches="tight")
         plt.close(fig_sample)
