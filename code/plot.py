@@ -50,6 +50,47 @@ def plot_event_histogram(in_hist, in_axis_delays, in_delay_unit, in_save_prefix,
         plt.close(fig_sample)
 
 
+def plot_param_fits(in_df_param_fits, in_save_prefix):
+    # Scatter-plot fitted parameters for different sample sizes.
+    # The dataframe must have these columns: size, value, stderr.
+    fig_scatter, ax_scatter = plt.subplots()
+    xlim_min = np.min(in_df_param_fits["value"])
+    xlim_max = np.max(in_df_param_fits["value"])
+    ylim_max = xlim_max - xlim_min
+    
+    vlim_max = np.log2(np.max(in_df_param_fits["size"]))
+    scatter_plot = ax_scatter.scatter(in_df_param_fits["value"], in_df_param_fits["stderr"],
+                                      c = np.log2(in_df_param_fits["size"]),
+                                      vmin = 0, vmax = vlim_max)
+    
+    # Plot the points that are beyond the axis limits.
+    remnants = in_df_param_fits[in_df_param_fits["stderr"] > ylim_max].copy()
+    remnants["stderr"] = ylim_max
+    ax_scatter.scatter(remnants["value"], remnants["stderr"], 
+                       c = np.log2(remnants["size"]), marker = "^",
+                       vmin = 0, vmax = vlim_max)
+    
+    last_value = in_df_param_fits["value"].iloc[-1]
+    last_stderr = in_df_param_fits["stderr"].iloc[-1]
+    
+    # Plot lines beyond which the estimates are incorrect compared to last fit.
+    ax_scatter.plot([last_value - last_stderr, last_value - last_stderr - ylim_max],
+                    [0, ylim_max], ":")
+    ax_scatter.plot([last_value + last_stderr, last_value + last_stderr + ylim_max],
+                    [0, ylim_max], ":")
+    
+    ax_scatter.set_xlim([xlim_min, xlim_max])
+    ax_scatter.set_ylim([0, ylim_max])
+    ax_scatter.set_xlabel("Value")
+    ax_scatter.set_ylabel("Standard Error")
+    fig_scatter.colorbar(scatter_plot, ax = ax_scatter, 
+                         label = r"$log_2x$ for $x$ snapshots per sample")
+    # plt.colorbar(scatter_plot)
+    fig_scatter.savefig(in_save_prefix + "_param_fits.png",
+                        bbox_inches="tight")
+    plt.close(fig_scatter)
+
+
 def plot_g2zero_comparison(in_spreads, in_spread_labels, in_save_prefix):
 
     fig_comp, ax_comp = plt.subplots()

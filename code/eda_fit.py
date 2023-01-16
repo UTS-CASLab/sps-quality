@@ -22,6 +22,7 @@ folder_saves = "../saves/"
 
 # Only full filename prefixes that contain a listed substring will be loaded.
 full_filename_requirements = ["SEQUR"]
+# full_filename_requirements = ["10uW"]
 
 random_seed = 0
 
@@ -131,6 +132,9 @@ for full_filename_prefix in full_filename_prefixes:
         # Save the results in pickled format.
         for param_id in param_ids:
             param_fits[param_id].to_pickle(save_prefix + "_fits_" + param_id + ".pkl")
+            
+    for param_id in param_ids:
+        plot.plot_param_fits(param_fits[param_id], plot_prefix + "_" + param_id)
     
     # sr_sample = df_events_shuffled.iloc[:,0:-1].sum(axis=1)
     # sr_sample /= np.sum(sr_sample)  # Normalise into a probability distribution.
