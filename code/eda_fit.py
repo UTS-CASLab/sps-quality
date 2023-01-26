@@ -21,8 +21,8 @@ folder_plots = "../results/"
 folder_saves = "../saves/"
 
 # Only full filename prefixes that contain a listed substring will be loaded.
-full_filename_requirements = ["SEQUR"]
-# full_filename_requirements = ["10uW"]
+# full_filename_requirements = ["SEQUR"]
+full_filename_requirements = ["10uW"]
 
 random_seed = 0
 
@@ -61,6 +61,9 @@ for full_filename_prefix in full_filename_prefixes:
         if not os.path.exists(os.path.join(folder_base, folder_prefix)):
             os.makedirs(os.path.join(folder_base, folder_prefix))
     
+    # Create a histogram of events across snapshots and plot it.
+    plot.plot_event_history(df_events, range_snapshots, plot_prefix)
+    
     # Set up a zoom for histogram plots.
     xlim_closeup = [np.mean(knowns["delay_mpe"]) - knowns["period_pulse"]*3/2,
                     np.mean(knowns["delay_mpe"]) + knowns["period_pulse"]*3/2]
@@ -69,72 +72,80 @@ for full_filename_prefix in full_filename_prefixes:
     param_ids = ["amp_env", "amp_ratio", "bg", "decay_peak", "delay_mpe"]
     param_fits = dict()
     
-    # Load fit results from pickled save files if they exist.
-    do_generate_fits = False
-    try:
-        for param_id in param_ids:
-            param_fits[param_id] = pd.read_pickle(save_prefix + "_fits_" + param_id + ".pkl")
-        
-        print("Previously saved fits for seed %i loaded." % random_seed)
-    except:
-        do_generate_fits = True
+    # Fit by optimising two different definitions of error.
+    # See calc.py for more information.
+    for use_poisson_likelihood in [True, False]:
+        fit_prefix = ""
+        if use_poisson_likelihood:
+            fit_prefix = "_pnoise"
     
-    # If fits have not been done before, do them now.
-    if do_generate_fits:
-        print("Generating fits for seed %i." % random_seed)
-        
-        # Shuffle the order of detector snapshots.
-        # TODO: Watch out for snapshots where no detections occurred.
-        order_snapshot = np.random.permutation(range_snapshots)
-        df_events_shuffled = df_events[order_snapshot]
-        # df_events_shuffled = df_events_shuffled.iloc[:,0:50]
-        max_snapshots = len(df_events_shuffled.columns)
-        
-        # Determine the number of samples of different sizes that should be fitted.
-        sizes_sample = np.array([2**i for i in range(0, int(np.log2(max_snapshots)))] + [max_snapshots])
-        # sizes_sample = np.array([max_snapshots])
-        number_fits = np.sum((max_snapshots/sizes_sample).astype(int))
-        
-        # Create dataframes to store the fit results.
-        param_fit_ids = ["size", "id", "value", "stderr"]
-        for param_id in param_ids:
-            param_fits[param_id] = pd.DataFrame(np.zeros([number_fits, len(param_fit_ids)]))
-            param_fits[param_id].columns = param_fit_ids
-        
-        # Do the fits for various sample sizes and store the results.
-        count_fit = 0
-        for size_sample in sizes_sample:
-            number_samples = int(max_snapshots/size_sample)
-            t = time()
-            for i in range(number_samples):
-                # Sum the samples and normalise.
-                sr_sample = df_events_shuffled.iloc[:, size_sample*i:size_sample*(i+1)].sum(axis=1)
-                sr_sample /= sr_sample.sum()
-                
-                fit_result = calc.estimate_g2zero_pulsed(sr_sample, sr_delays, knowns)
-                
-                for param_id in param_ids:
-                    param_fits[param_id]["size"][count_fit] = size_sample
-                    param_fits[param_id]["id"][count_fit] = i
-                    param_fits[param_id]["value"][count_fit] = fit_result.params[param_id].value
-                    param_fits[param_id]["stderr"][count_fit] = fit_result.params[param_id].stderr
-                count_fit += 1
-            print("%i samples of size %i (max %i) have been fitted: %f s" 
-                  % (number_samples, size_sample, max_snapshots, time() - t))
+        # Load fit results from pickled save files if they exist.
+        do_generate_fits = False
+        try:
+            for param_id in param_ids:
+                param_fits[param_id] = pd.read_pickle(save_prefix + fit_prefix + "_fits_" + param_id + ".pkl")
             
-            # As a sanity check, compare fit and histogram on the last sample.
-            plot.plot_event_histogram(sr_sample, sr_delays, constants["unit_delay"], 
-                                      plot_prefix + "_example_fit_sample_size_" + str(size_sample),
-                                      in_hist_comp = calc.func_pulsed(fit_result.params, sr_delays, sr_sample), 
-                                      in_label_comp = "Fit",
-                                      in_xlim_closeup = xlim_closeup)
+            print("Previously saved %s fits for seed %i loaded." % (fit_prefix.lstrip("_"), random_seed))
+        except:
+            do_generate_fits = True
         
-        # Save the results in pickled format.
-        for param_id in param_ids:
-            param_fits[param_id].to_pickle(save_prefix + "_fits_" + param_id + ".pkl")
+        # If fits have not been done before, do them now.
+        if do_generate_fits:
+            print("Generating %s fits for seed %i." % (fit_prefix.lstrip("_"), random_seed))
             
-    for param_id in param_ids:
-        plot.plot_param_fits(param_fits[param_id], plot_prefix + "_" + param_id)
+            # Shuffle the order of detector snapshots.
+            # TODO: Watch out for snapshots where no detections occurred.
+            np.random.seed(seed = random_seed)
+            order_snapshot = np.random.permutation(range_snapshots)
+            df_events_shuffled = df_events[order_snapshot]
+            df_events_shuffled = df_events_shuffled.iloc[:,0:50]
+            max_snapshots = len(df_events_shuffled.columns)
+            
+            # Determine the number of samples of different sizes that should be fitted.
+            sizes_sample = np.array([2**i for i in range(0, int(np.log2(max_snapshots)))] + [max_snapshots])
+            # sizes_sample = np.array([max_snapshots])
+            number_fits = np.sum((max_snapshots/sizes_sample).astype(int))
+            
+            # Create dataframes to store the fit results.
+            param_fit_ids = ["size", "id", "value", "stderr"]
+            for param_id in param_ids:
+                param_fits[param_id] = pd.DataFrame(np.zeros([number_fits, len(param_fit_ids)]))
+                param_fits[param_id].columns = param_fit_ids
+            
+            # Do the fits for various sample sizes and store the results.
+            count_fit = 0
+            for size_sample in sizes_sample:
+                number_samples = int(max_snapshots/size_sample)
+                t = time()
+                for i in range(number_samples):
+                    # Sum the samples and normalise.
+                    sr_sample = df_events_shuffled.iloc[:, size_sample*i:size_sample*(i+1)].sum(axis=1)
+                    sr_sample /= sr_sample.sum()
+                    
+                    fit_result = calc.estimate_g2zero_pulsed(sr_sample, sr_delays, knowns, use_poisson_likelihood)
+                    
+                    for param_id in param_ids:
+                        param_fits[param_id]["size"][count_fit] = size_sample
+                        param_fits[param_id]["id"][count_fit] = i
+                        param_fits[param_id]["value"][count_fit] = fit_result.params[param_id].value
+                        param_fits[param_id]["stderr"][count_fit] = fit_result.params[param_id].stderr
+                    count_fit += 1
+                print("%i samples of size %i (max %i) have been %s fitted: %f s" 
+                      % (number_samples, size_sample, max_snapshots, fit_prefix.lstrip("_"), time() - t))
+                
+                # As a sanity check, compare fit and histogram on the last sample.
+                plot.plot_event_histogram(sr_sample, sr_delays, constants["unit_delay"], 
+                                          plot_prefix + "_example" + fit_prefix + "_fit_sample_size_" + str(size_sample),
+                                          in_hist_comp = calc.func_pulsed(fit_result.params, sr_delays, sr_sample), 
+                                          in_label_comp = fit_prefix.lstrip("_").title() + "Fit",
+                                          in_xlim_closeup = xlim_closeup)
+            
+            # Save the results in pickled format.
+            for param_id in param_ids:
+                param_fits[param_id].to_pickle(save_prefix + fit_prefix + "_fits_" + param_id + ".pkl")
+                
+        for param_id in param_ids:
+            plot.plot_param_fits(param_fits[param_id], plot_prefix + "_" + param_id + fit_prefix)
     
     # sr_sample = df_events_shuffled.iloc[:,0:-1].sum(axis=1)
     # sr_sample /= np.sum(sr_sample)  # Normalise into a probability distribution.

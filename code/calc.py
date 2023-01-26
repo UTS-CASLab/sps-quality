@@ -8,7 +8,8 @@ Created on Wed Jan 11 17:25:33 2023
 import numpy as np
 from lmfit import Parameters, minimize
 
-def func_pulsed(params, x, y, return_fit_error = False):
+def func_pulsed(params, x, y, 
+                use_poisson_likelihood = False, return_fit_error = False):
     # Define the pulsed fitting function for the delay histogram.
     # Is based on Eq. (2) of: https://doi.org/10.1063/1.5143786
     # x: domain (delays)
@@ -35,12 +36,17 @@ def func_pulsed(params, x, y, return_fit_error = False):
     fit = bg + amp_env*np.exp(-factor_env*np.abs(tau)) * (np.cosh((tau_m - period_pulse/2)/decay_peak) / np.sinh(period_pulse/(2*decay_peak)) 
        - (1 - amp_ratio)*np.exp(-np.abs(tau)/decay_peak))
     
+    # See the supplementary material of: https://doi.org/10.1063/1.5143786
+    # The error to minimise is based on Eq. (S25) and Eq. (S26).
     if return_fit_error:
-        return fit - y
+        if use_poisson_likelihood:
+            return np.sqrt(fit - y*np.log(fit))
+        else:
+            return fit - y
     else:
         return fit
     
-def estimate_g2zero_pulsed(in_sr_sample, in_sr_delays, in_knowns):
+def estimate_g2zero_pulsed(in_sr_sample, in_sr_delays, in_knowns, use_poisson_likelihood):
     
     period_pulse = in_knowns["period_pulse"]
     range_delays = in_sr_delays[in_sr_delays.size-1] - in_sr_delays[0]
@@ -61,24 +67,27 @@ def estimate_g2zero_pulsed(in_sr_sample, in_sr_delays, in_knowns):
     params.add("factor_env", value = 0, min = 0, max = np.inf, vary = False)
     params.add("decay_peak", value = step_delays, min = step_delays/10, max = np.inf)
     
-    # Run a five-parameter fit with least-squares then Nelder Mead method.
-    # Refine amplitude fit with the least-squares method.
-    # Then run a five-parameter least-squares fit, just for the errors.
-    fitted_params = minimize(func_pulsed, params, args=(in_sr_delays, in_sr_sample, True), 
-                              method="least_squares", calc_covar=False)
-    fitted_params = minimize(func_pulsed, fitted_params.params, args=(in_sr_delays, in_sr_sample, True), 
-                              method="nelder_mead", calc_covar=False)
+    # Run a five-parameter fit with the Powell method.
+    # Then run a five-parameter Levenberg-Marquardt fit, just for the errors.
+    fitted_params = minimize(func_pulsed, params, 
+                             args=(in_sr_delays, in_sr_sample, use_poisson_likelihood, True),
+                             method="powell", calc_covar=False)
+    # fitted_params = minimize(func_pulsed, fitted_params.params, 
+    #                          args=(in_sr_delays, in_sr_sample, use_poisson_likelihood, True),
+    #                          method="nelder_mead", calc_covar=False)
 
-    fitted_params.params["delay_mpe"].vary = False
-    fitted_params.params["bg"].vary = False
-    fitted_params.params["decay_peak"].vary = False
-    fitted_params = minimize(func_pulsed, fitted_params.params, args=(in_sr_delays, in_sr_sample, True), 
-                              method="least_squares", calc_covar=False)
+    # fitted_params.params["delay_mpe"].vary = False
+    # fitted_params.params["bg"].vary = False
+    # fitted_params.params["decay_peak"].vary = False
+    # fitted_params = minimize(func_pulsed, fitted_params.params, 
+    #                           args=(in_sr_delays, in_sr_sample, use_poisson_likelihood, True),
+    #                           method="least_squares", calc_covar=False)
     
-    fitted_params.params["delay_mpe"].vary = True
-    fitted_params.params["bg"].vary = True
-    fitted_params.params["decay_peak"].vary = True
-    fitted_params = minimize(func_pulsed, fitted_params.params, args=(in_sr_delays, in_sr_sample, True), 
+    # fitted_params.params["delay_mpe"].vary = True
+    # fitted_params.params["bg"].vary = True
+    # fitted_params.params["decay_peak"].vary = True
+    fitted_params = minimize(func_pulsed, fitted_params.params, 
+                              args=(in_sr_delays, in_sr_sample, use_poisson_likelihood, True),
                               method="least_squares")
     # fitted_params.params.pretty_print()
     
