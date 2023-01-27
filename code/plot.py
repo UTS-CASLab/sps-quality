@@ -52,7 +52,7 @@ def plot_event_histogram(in_hist, in_axis_delays, in_delay_unit, in_save_prefix,
 
 def plot_param_fits(in_df_param_fits, in_save_prefix):
     # Scatter-plot fitted parameters for different sample sizes.
-    # The dataframe must have these columns: size, value, stderr.
+    # The dataframe must contain these columns: size, value, stderr.
     fig_scatter, ax_scatter = plt.subplots()
     xlim_min = np.min(in_df_param_fits["value"])
     xlim_max = np.max(in_df_param_fits["value"])
@@ -86,9 +86,57 @@ def plot_param_fits(in_df_param_fits, in_save_prefix):
     fig_scatter.colorbar(scatter_plot, ax = ax_scatter, 
                          label = r"$log_2x$ for $x$ snapshots per sample")
     # plt.colorbar(scatter_plot)
-    fig_scatter.savefig(in_save_prefix + "_param_fits.png",
+    fig_scatter.savefig(in_save_prefix + ".png",
                         bbox_inches="tight")
     plt.close(fig_scatter)
+    
+    
+def plot_param_fit_averages(in_df_param_fits, in_param_id, in_save_prefix, in_constants):
+    # Plot how quickly cumulative averages for fits of different sample sizes stabilise.
+    # The dataframe must contain these columns: size, value, stderr.
+    
+    # The last row is the fitted parameter for a maximally sized sample.
+    # That value will be considered the 'best' estimate.
+    max_size_sample = in_df_param_fits["size"].iloc[-1]
+    value_best = in_df_param_fits["value"].iloc[-1]
+    label_best = "Best Est."
+    
+    number_plots = int(np.log2(max_size_sample))
+    
+    # Set up the right number of axes.
+    # TODO: Improve the size hard coding.
+    fig_averages = plt.figure(figsize=(8, number_plots + 2))
+    gs = fig_averages.add_gridspec(number_plots, hspace = 0)
+    axes_averages = gs.subplots(sharex=True, sharey=True)
+    
+    for c in range(0, number_plots):
+        size_sample = 2**c
+        fits_for_size = in_df_param_fits[in_df_param_fits["size"] == size_sample]
+        cumulative_average = fits_for_size["value"].expanding().mean()
+        cumulative_time = size_sample * (fits_for_size["id"] + 1) * in_constants["duration_snapshot"]
+        if c == 1:
+            label_best = None
+        axes_averages[c].plot([0, max_size_sample * in_constants["duration_snapshot"]], 
+                              [value_best, value_best], ":", label = label_best)
+        axes_averages[c].plot(cumulative_time, cumulative_average, "x-", 
+                              label = "Window: " 
+                              + str(size_sample * in_constants["duration_snapshot"]) 
+                              + " s")
+        
+        axes_averages[c].ticklabel_format(axis = "y", style = "sci", scilimits = (-2,2))
+        axes_averages[c].set_xlim([0, max_size_sample * in_constants["duration_snapshot"]])
+        axes_averages[c].legend()
+        axes_averages[c].label_outer()
+        
+        # # Set a standard axis size.
+        # # TODO: Improve the size hard coding.
+        # axes_averages[c].figure.set_size_inches(6, 1)
+        
+    fig_averages.supxlabel("Time (s)")
+    fig_averages.supylabel("Cumulative Average of Parameter Fits: " + in_param_id)
+    fig_averages.savefig(in_save_prefix + "_cumulative_average.png", bbox_inches="tight")
+    plt.close(fig_averages)
+    
 
 
 def plot_g2zero_comparison(in_spreads, in_spread_labels, in_save_prefix):
