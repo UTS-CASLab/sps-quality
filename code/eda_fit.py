@@ -9,6 +9,7 @@ import os
 
 import pandas as pd
 import numpy as np
+from lmfit import fit_report
 
 from time import time
 
@@ -21,8 +22,9 @@ folder_plots = "../results/"
 folder_saves = "../saves/"
 
 # Only full filename prefixes that contain a listed substring will be loaded.
-# full_filename_requirements = ["SEQUR"]
-full_filename_requirements = ["10uW"]
+full_filename_requirements = ["SEQUR"]
+# full_filename_requirements = ["10uW"]
+# full_filename_requirements = ["1p2uW"]
 
 random_seed = 0
 
@@ -100,7 +102,7 @@ for full_filename_prefix in full_filename_prefixes:
             np.random.seed(seed = random_seed)
             order_snapshot = np.random.permutation(range_snapshots)
             df_events_shuffled = df_events[order_snapshot]
-            df_events_shuffled = df_events_shuffled.iloc[:,0:50]
+            # df_events_shuffled = df_events_shuffled.iloc[:,0:50]
             max_snapshots = len(df_events_shuffled.columns)
             
             # Determine the number of samples of different sizes that should be fitted.
@@ -139,9 +141,12 @@ for full_filename_prefix in full_filename_prefixes:
                 # TODO: Have this done outside of the data generation step.
                 plot.plot_event_histogram(sr_sample, sr_delays, constants["unit_delay"], 
                                           plot_prefix + "_example_" + fit_prefix + "_sample_size_" + str(size_sample),
-                                          in_hist_comp = calc.func_pulsed(fit_result.params, sr_delays, sr_sample), 
+                                          in_hist_comp = calc.func_pulsed(fit_result.params, sr_delays), 
                                           in_label_comp = fit_label,
                                           in_xlim_closeup = xlim_closeup)
+                # For debugging, also print the last fit report for manual saving.
+                # TODO: Actually log this.
+                print(fit_report(fit_result))
             
             # Save the results in pickled format.
             # Compress the sizes by downcasting appropriately.

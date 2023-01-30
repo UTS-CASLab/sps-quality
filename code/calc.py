@@ -6,10 +6,9 @@ Created on Wed Jan 11 17:25:33 2023
 """
 
 import numpy as np
-from lmfit import Parameters, minimize
+from lmfit import Parameters, Minimizer, minimize
 
-def func_pulsed(params, x, y, 
-                use_poisson_likelihood = False, return_fit_error = False):
+def func_pulsed(params, x, y = None):
     # Define the pulsed fitting function for the delay histogram.
     # Is based on Eq. (2) of: https://doi.org/10.1063/1.5143786
     # x: domain (delays)
@@ -38,13 +37,18 @@ def func_pulsed(params, x, y,
     
     # See the supplementary material of: https://doi.org/10.1063/1.5143786
     # The error to minimise is based on Eq. (S25) and Eq. (S26).
-    if return_fit_error:
-        if use_poisson_likelihood:
-            return np.sqrt(fit - y*np.log(fit))
-        else:
-            return fit - y
-    else:
+    # if return_fit_error:
+    #     if use_poisson_likelihood:
+    #         return np.sqrt(fit - y*np.log(fit))
+    #     else:
+    #         return fit - y
+    # else:
+    #     return fit
+    
+    if y is None:
         return fit
+    else:
+        return fit - y
     
 def estimate_g2zero_pulsed(in_sr_sample, in_sr_delays, in_knowns, use_poisson_likelihood):
     
@@ -67,28 +71,57 @@ def estimate_g2zero_pulsed(in_sr_sample, in_sr_delays, in_knowns, use_poisson_li
     params.add("factor_env", value = 0, min = 0, max = np.inf, vary = False)
     params.add("decay_peak", value = step_delays, min = step_delays/10, max = np.inf)
     
+    # See the supplementary material of: https://doi.org/10.1063/1.5143786
+    # The objective to minimise is based on Eq. (S25) and Eq. (S26).
+    if use_poisson_likelihood:
+        # r is assumed to be the residual fit - data, hence re-adding the data.
+        # The new objective should be fit - data*np.log(fit).
+        mini = Minimizer(func_pulsed, params, fcn_args = (in_sr_delays, in_sr_sample),
+                         reduce_fcn = lambda r : 
+                             ((r + in_sr_sample) 
+                              - in_sr_sample*np.log(r + in_sr_sample)).sum())
+    else:
+        # The default objective is just the sum of the residual squared.
+        mini = Minimizer(func_pulsed, params, fcn_args = (in_sr_delays, in_sr_sample))
+        
     # Run a five-parameter fit with the Powell method.
     # Then run a five-parameter Levenberg-Marquardt fit, just for the errors.
-    fitted_params = minimize(func_pulsed, params, 
-                             args=(in_sr_delays, in_sr_sample, use_poisson_likelihood, True),
-                             method="powell", calc_covar=False)
-    # fitted_params = minimize(func_pulsed, fitted_params.params, 
-    #                          args=(in_sr_delays, in_sr_sample, use_poisson_likelihood, True),
-    #                          method="nelder_mead", calc_covar=False)
+    mini.calc_covar = False
+    fitted_params = mini.minimize(method="powell")
+    mini.calc_covar = True
+    fitted_params = mini.minimize(method="least_squares", params=fitted_params.params)
+    
+    # # Run a five-parameter fit with the Powell method.
+    # # Then run a five-parameter Levenberg-Marquardt fit, just for the errors.
+    # fitted_params = minimize(func_pulsed, params, 
+    #                           args=(in_sr_delays, in_sr_sample, use_poisson_likelihood, True),
+    #                           method="powell", calc_covar=False)
+    # # fitted_params = minimize(func_pulsed, fitted_params.params, 
+    # #                          args=(in_sr_delays, in_sr_sample, use_poisson_likelihood, True),
+    # #                          method="nelder_mead", calc_covar=False)
 
-    # fitted_params.params["delay_mpe"].vary = False
-    # fitted_params.params["bg"].vary = False
-    # fitted_params.params["decay_peak"].vary = False
+    # # fitted_params.params["delay_mpe"].vary = False
+    # # fitted_params.params["bg"].vary = False
+    # # fitted_params.params["decay_peak"].vary = False
+    # # fitted_params = minimize(func_pulsed, fitted_params.params, 
+    # #                           args=(in_sr_delays, in_sr_sample, use_poisson_likelihood, True),
+    # #                           method="least_squares", calc_covar=False)
+    
+    # # fitted_params.params["delay_mpe"].vary = True
+    # # fitted_params.params["bg"].vary = True
+    # # fitted_params.params["decay_peak"].vary = True
     # fitted_params = minimize(func_pulsed, fitted_params.params, 
     #                           args=(in_sr_delays, in_sr_sample, use_poisson_likelihood, True),
-    #                           method="least_squares", calc_covar=False)
+    #                           method="least_squares")
     
-    # fitted_params.params["delay_mpe"].vary = True
-    # fitted_params.params["bg"].vary = True
-    # fitted_params.params["decay_peak"].vary = True
-    fitted_params = minimize(func_pulsed, fitted_params.params, 
-                              args=(in_sr_delays, in_sr_sample, use_poisson_likelihood, True),
-                              method="least_squares")
-    # fitted_params.params.pretty_print()
+    # # fitted_params.params["bg"].vary = False
+    # # fitted_params.params["delay_mpe"].vary = False
+    # # fitted_params.params["amp_env"].vary = False
+    # # fitted_params.params["amp_ratio"].vary = False
+    # # fitted_params.params["decay_peak"].vary = False
+    # # fitted_params = minimize(func_pulsed, fitted_params.params, 
+    # #                           args=(in_sr_delays, in_sr_sample, False, True),
+    # #                           method="least_squares")
+    # # fitted_params.params.pretty_print()
     
     return fitted_params

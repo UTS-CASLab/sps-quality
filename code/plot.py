@@ -118,7 +118,7 @@ def plot_param_fit_averages(in_df_param_fits, in_param_id, in_save_prefix, in_co
             label_best = None
         axes_averages[c].plot([0, max_size_sample * in_constants["duration_snapshot"]], 
                               [value_best, value_best], ":", label = label_best)
-        axes_averages[c].plot(cumulative_time, cumulative_average, "x-", 
+        axes_averages[c].plot(cumulative_time, cumulative_average, "-", 
                               label = "Window: " 
                               + str(size_sample * in_constants["duration_snapshot"]) 
                               + " s")
