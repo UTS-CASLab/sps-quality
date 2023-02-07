@@ -141,6 +141,7 @@ for full_filename_prefix in full_filename_prefixes:
                 # TODO: Have this done outside of the data generation step.
                 plot.plot_event_histogram(sr_sample, sr_delays, constants["unit_delay"], 
                                           plot_prefix + "_example_" + fit_prefix + "_sample_size_" + str(size_sample),
+                                          in_label = "Sampled Experiment",
                                           in_hist_comp = calc.func_pulsed(fit_result.params, sr_delays), 
                                           in_label_comp = fit_label,
                                           in_xlim_closeup = xlim_closeup)
