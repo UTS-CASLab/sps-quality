@@ -35,20 +35,44 @@ def func_pulsed(params, x, y = None):
     fit = bg + amp_env*np.exp(-factor_env*np.abs(tau)) * (np.cosh((tau_m - period_pulse/2)/decay_peak) / np.sinh(period_pulse/(2*decay_peak)) 
        - (1 - amp_ratio)*np.exp(-np.abs(tau)/decay_peak))
     
-    # See the supplementary material of: https://doi.org/10.1063/1.5143786
-    # The error to minimise is based on Eq. (S25) and Eq. (S26).
-    # if return_fit_error:
-    #     if use_poisson_likelihood:
-    #         return np.sqrt(fit - y*np.log(fit))
-    #     else:
-    #         return fit - y
-    # else:
-    #     return fit
-    
     if y is None:
         return fit
     else:
         return fit - y
+    
+def func_pulsed_integral(params, a, b):
+    # Calculates integral of distribution from a to b.
+    # Only valid if factor_env is zero.
+    factor_env = params["factor_env"]
+    if not factor_env == 0:
+        raise Exception("Error: A decaying envelope is not appropriate for this integral.")
+        
+    def func_int(params, tau):
+        bg = params["bg"]
+        period_pulse = params["period_pulse"]
+        amp_env = params["amp_env"]
+        amp_ratio = params["amp_ratio"]
+        decay_peak = params["decay_peak"]
+        
+        tau_m = np.mod(tau, period_pulse)
+        term_1a = np.sinh((tau_m - period_pulse/2)/decay_peak) / np.sinh(period_pulse/(2*decay_peak))
+        term_1b = 2*np.floor_divide(tau, period_pulse)
+        # term_2a = (amp_ratio - 1) * np.exp(-tau/decay_peak)/2
+        # term_2b = (np.exp(tau/decay_peak)+1)**2 - np.sign(tau)*(np.exp(tau/decay_peak)-1)**2 - 2
+        term_2a = (amp_ratio - 1)
+        term_2b = np.heaviside(-tau, 0.5)*np.exp(tau/decay_peak)
+        term_2c = np.heaviside(tau, 0.5)*(2-np.exp(-tau/decay_peak))
+        func = bg * tau + amp_env * decay_peak * (term_1a + term_1b + term_2a * (term_2b + term_2c))
+        # func = bg * tau + amp_env * decay_peak * (term_2a * (term_2b + term_2c))
+        return func
+    
+    delay_mpe = params["delay_mpe"]
+    tau_a = a - delay_mpe
+    tau_b = b - delay_mpe
+    
+    integral = func_int(params, tau_b) - func_int(params, tau_a)
+    
+    return integral
     
 def estimate_g2zero_pulsed(in_sr_sample, in_sr_delays, in_knowns, use_poisson_likelihood):
     
@@ -90,38 +114,5 @@ def estimate_g2zero_pulsed(in_sr_sample, in_sr_delays, in_knowns, use_poisson_li
     fitted_params = mini.minimize(method="powell")
     mini.calc_covar = True
     fitted_params = mini.minimize(method="least_squares", params=fitted_params.params)
-    
-    # # Run a five-parameter fit with the Powell method.
-    # # Then run a five-parameter Levenberg-Marquardt fit, just for the errors.
-    # fitted_params = minimize(func_pulsed, params, 
-    #                           args=(in_sr_delays, in_sr_sample, use_poisson_likelihood, True),
-    #                           method="powell", calc_covar=False)
-    # # fitted_params = minimize(func_pulsed, fitted_params.params, 
-    # #                          args=(in_sr_delays, in_sr_sample, use_poisson_likelihood, True),
-    # #                          method="nelder_mead", calc_covar=False)
-
-    # # fitted_params.params["delay_mpe"].vary = False
-    # # fitted_params.params["bg"].vary = False
-    # # fitted_params.params["decay_peak"].vary = False
-    # # fitted_params = minimize(func_pulsed, fitted_params.params, 
-    # #                           args=(in_sr_delays, in_sr_sample, use_poisson_likelihood, True),
-    # #                           method="least_squares", calc_covar=False)
-    
-    # # fitted_params.params["delay_mpe"].vary = True
-    # # fitted_params.params["bg"].vary = True
-    # # fitted_params.params["decay_peak"].vary = True
-    # fitted_params = minimize(func_pulsed, fitted_params.params, 
-    #                           args=(in_sr_delays, in_sr_sample, use_poisson_likelihood, True),
-    #                           method="least_squares")
-    
-    # # fitted_params.params["bg"].vary = False
-    # # fitted_params.params["delay_mpe"].vary = False
-    # # fitted_params.params["amp_env"].vary = False
-    # # fitted_params.params["amp_ratio"].vary = False
-    # # fitted_params.params["decay_peak"].vary = False
-    # # fitted_params = minimize(func_pulsed, fitted_params.params, 
-    # #                           args=(in_sr_delays, in_sr_sample, False, True),
-    # #                           method="least_squares")
-    # # fitted_params.params.pretty_print()
     
     return fitted_params

@@ -145,7 +145,7 @@ for full_filename_prefix in full_filename_prefixes:
                                           in_label_comp = fit_label,
                                           in_xlim_closeup = xlim_closeup)
                 # For debugging, also print the last fit report for manual saving.
-                # TODO: Actually log this.
+                # TODO: Actually log this. Its display is currently almost useless.
                 print(fit_report(fit_result))
             
             # Save the results in pickled format.
