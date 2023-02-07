@@ -6,7 +6,8 @@ Created on Wed Jan 11 17:25:33 2023
 """
 
 import numpy as np
-from lmfit import Parameters, Minimizer, minimize
+from lmfit import Parameters, Minimizer
+from scipy import optimize as sco
 
 def func_pulsed(params, x, y = None):
     # Define the pulsed fitting function for the delay histogram.
@@ -116,3 +117,20 @@ def estimate_g2zero_pulsed(in_sr_sample, in_sr_delays, in_knowns, use_poisson_li
     fitted_params = mini.minimize(method="least_squares", params=fitted_params.params)
     
     return fitted_params
+
+def cdf_root(x, y, in_params, in_domain_start):
+    # Define a function where the root indicates the following...
+    # The x value of the histogram integral corresponding to a specified y value.
+    return func_pulsed_integral(in_params, in_domain_start, x) - y
+
+def inverse_sample(y, in_params, in_domain_start, in_domain_end, in_total_int):
+    # Randomly sample a two-photon event from the pulsed function by inverse-sampling its integral.
+    
+    # The quasi-linearity of the integral allows for decent initial guesses.
+    x_guess = (y / in_total_int) * (in_domain_end - in_domain_start)
+    
+    root_result = sco.root_scalar(cdf_root, args=(y, in_params, in_domain_start),
+                                  bracket = [in_domain_start, in_domain_end],
+                                  x0 = x_guess)
+    
+    return root_result.root

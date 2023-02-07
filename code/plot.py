@@ -15,7 +15,7 @@ def plot_event_history(in_df_events, in_axis_time, in_save_prefix):
     df_hist_snapshot = in_df_events.sum(axis=0)
     
     fig_hist_snapshot, ax_hist_snapshot = plt.subplots()
-    ax_hist_snapshot.plot(in_axis_time, df_hist_snapshot, label="Raw")
+    ax_hist_snapshot.plot(in_axis_time, df_hist_snapshot, label="Data")
     ax_hist_snapshot.set_xlabel("Snapshot (s)")
     ax_hist_snapshot.set_ylabel("Events per bin (" 
                                 + str(in_axis_time[1] - in_axis_time[0]) + " s)")
@@ -31,7 +31,7 @@ def plot_event_histogram(in_hist, in_axis_delays, in_delay_unit, in_save_prefix,
     # Plot a delay-based histogram.
     # Optionally compare it against another function on the same axis.
     fig_sample, ax_sample = plt.subplots()
-    ax_sample.plot(in_axis_delays/in_delay_unit, in_hist, label="Raw")
+    ax_sample.plot(in_axis_delays/in_delay_unit, in_hist, label="Data")
     if (in_hist_comp is not None) and (in_label_comp is not None):
         ax_sample.plot(in_axis_delays/in_delay_unit, in_hist_comp,
                        label=in_label_comp)
