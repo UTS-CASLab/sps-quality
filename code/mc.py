@@ -32,15 +32,17 @@ def main():
     folder_saves = "../saves/"
     
     # Only full filename prefixes that contain a listed substring will be loaded.
-    # full_filename_requirements = ["SEQUR"]
-    full_filename_requirements = ["10uW"]
+    full_filename_requirements = ["SEQUR"]
+    # full_filename_requirements = ["10uW"]
     # full_filename_requirements = ["1p2uW"]
     
     random_seed = 0
     
     # Given a sample size, how many such samples to take during the MC process.
-    sample_size_iterations = [(100, 20)]#,
-                              # (1000000, 100)]
+    sample_size_iterations = [(1000000, 100),
+                              (100000, 300),
+                              (10000, 1000),
+                              (1000, 3000)]
     
     constants = {}
     constants["duration_snapshot"] = 10     # Single sampling by detectors; unit s.
@@ -107,7 +109,7 @@ def main():
         
         # Fit by optimising two different definitions of error.
         # See calc.py for more information.
-        for use_poisson_likelihood in [False, True]:
+        for use_poisson_likelihood in [False]:#, True]:
             fit_prefix = "fits"
             fit_label = "Fit"
             if use_poisson_likelihood:
@@ -188,7 +190,6 @@ def main():
                         
                         # Uniformly sample possible integral values within the delay domain.
                         y_sample = np.random.uniform(low=0.0, high=total_int, size=num_events)
-                        print(y_sample[0])
                         
                         if id_iteration < num_iterations_done:
                             continue
