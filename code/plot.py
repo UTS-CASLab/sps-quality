@@ -15,10 +15,11 @@ def plot_event_history(in_df_events, in_axis_time, in_save_prefix):
     df_hist_snapshot = in_df_events.sum(axis=0)
     
     fig_hist_snapshot, ax_hist_snapshot = plt.subplots()
-    ax_hist_snapshot.plot(in_axis_time, df_hist_snapshot, label="Data")
-    ax_hist_snapshot.set_xlabel("Snapshot (s)")
-    ax_hist_snapshot.set_ylabel("Events per bin (" 
+    ax_hist_snapshot.autoscale(enable=True, axis="x", tight=True)
+    ax_hist_snapshot.set_xlabel("Time (s)")
+    ax_hist_snapshot.set_ylabel("Total Events Per Snapshot (" 
                                 + str(in_axis_time[1] - in_axis_time[0]) + " s)")
+    ax_hist_snapshot.plot(in_axis_time, df_hist_snapshot, label="Data")
     ax_hist_snapshot.legend()
     fig_hist_snapshot.savefig(in_save_prefix + "_events_per_snapshot.png", 
                               bbox_inches="tight")
@@ -28,27 +29,40 @@ def plot_event_history(in_df_events, in_axis_time, in_save_prefix):
 def plot_event_histogram(in_hist, in_axis_delays, in_constants, 
                          in_save_prefix, in_label = "Data",
                          in_hist_comp = None, in_label_comp = None,
-                         in_xlim_closeup = None):
+                         in_xlim_closeup = None, do_only_closeup = True,
+                         do_logarithmic_scale = False):
     # Plot a delay-based histogram.
     # Optionally compare it against another function on the same axis.
+    # Both in_hist_comp and in_label_comp can be lists.
     
     unit_delay = in_constants["unit_delay"]
     
     fig_sample, ax_sample = plt.subplots()
     ax_sample.plot(in_axis_delays/unit_delay, in_hist, label = in_label)
     if (in_hist_comp is not None) and (in_label_comp is not None):
-        ax_sample.plot(in_axis_delays/unit_delay, in_hist_comp,
-                       label=in_label_comp)
+        if isinstance(in_hist_comp, list):
+            for i in range(len(in_hist_comp)):
+                ax_sample.plot(in_axis_delays/unit_delay, in_hist_comp[i],
+                               label=in_label_comp[i])
+        else:
+            ax_sample.plot(in_axis_delays/unit_delay, in_hist_comp,
+                           label=in_label_comp)
     ax_sample.set_xlabel("Delay (%ss)" % unit_delay)
     events_per_bin = (in_axis_delays[1]-in_axis_delays[0])/unit_delay
-    ax_sample.set_ylabel("Event probability per bin (%s %ss)" % (events_per_bin, unit_delay))
+    ax_sample.set_ylabel("Detected Events (Bin Size: %s %ss)" % (events_per_bin, unit_delay))
+    ax_sample.autoscale(enable=True, axis="x", tight=True)
     ax_sample.legend()
-    fig_sample.savefig(in_save_prefix + "_hist.png",
-                       bbox_inches="tight")
+    if do_logarithmic_scale:
+        plt.yscale("log")
+        ax_sample.legend(loc="upper right", framealpha=1)
+    if not (do_only_closeup and in_xlim_closeup is not None):
+        fig_sample.savefig(in_save_prefix + "_hist.png",
+                           bbox_inches="tight")
     plt.close(fig_sample)
     
     if in_xlim_closeup is not None:
         ax_sample.set_xlim(np.array(in_xlim_closeup)/unit_delay)
+        ax_sample.legend()
         fig_sample.savefig(in_save_prefix + "_hist_closeup.png",
                            bbox_inches="tight")
         plt.close(fig_sample)

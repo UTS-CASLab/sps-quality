@@ -34,12 +34,12 @@ def get_full_filename_prefixes(in_folder_data):
                 prefix = rchop(prefix.rstrip(string.digits).rstrip(" _"), "day").rstrip(" _")
                 prefix = rchop(prefix.rstrip(string.digits).rstrip(" _"), "test").rstrip(" _")
                 # Custom file fusions.
-                ending_cuts = [["10uW_12000cps", "_12000cps"],
-                               ["10uW_6000cps", "_6000cps"],
-                               ["auto_0p22mW_5K_ex1231nm pulsed_1319p4nm-1323p6nm", "_1319p4nm-1323p6nm"],
+                ending_cuts = [["auto_0p22mW_5K_ex1231nm pulsed_1319p4nm-1323p6nm", "_1319p4nm-1323p6nm"],
                                ["auto_0p22mW_5K_ex1231nm pulsed_1319p3nm-1323p55nm", "_1319p3nm-1323p55nm"],
                                ["auto_0p25mW_5K_ex1120nm pulsed_1319p3nm-1323p7nm", "_1319p3nm-1323p7nm"],
-                               ["auto_0p25mW_5K_ex1120nm pulsed_1319p4nm-1323p7nm", "_1319p4nm-1323p7nm"]]
+                               ["auto_0p25mW_5K_ex1120nm pulsed_1319p4nm-1323p7nm", "_1319p4nm-1323p7nm"]]#,
+                               # ["10uW_12000cps", "_12000cps"],
+                               # ["10uW_6000cps", "_6000cps"]]
                 for ending, cut in ending_cuts:
                     if prefix.endswith(ending): prefix = rchop(prefix, cut)
                 full_filename_prefixes.add(prefix)
