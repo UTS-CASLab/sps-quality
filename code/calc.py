@@ -91,7 +91,7 @@ def estimate_g2zero_pulsed(in_sr_sample, in_sr_delays, in_knowns, use_poisson_li
         mini = Minimizer(func_pulsed, params, fcn_args = (in_sr_delays, in_sr_sample, in_duration))
         
     # Run a five-parameter fit with the Powell method.
-    # Then run a five-parameter Levenberg-Marquardt fit, just for the errors.
+    # Then run a five-parameter 'Trust Region Reflective' fit, just for the errors.
     mini.calc_covar = False
     fitted_params = mini.minimize(method="powell")
     mini.calc_covar = True
