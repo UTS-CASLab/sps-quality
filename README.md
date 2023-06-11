@@ -22,7 +22,7 @@ The scripts provided here demonstratively implement these procedures of data aug
    ```
    Alternatively, you can download the repository as a ZIP file and extract it.
 
-2. Install Anaconda by following the instructions from the official Anaconda website:
+2. Install Anaconda by following the instructions from the official Anaconda website:  
    https://www.anaconda.com/products/individual
 
 3. Open Anaconda Prompt (Windows) or Terminal (macOS/Linux) and install the required packages:
