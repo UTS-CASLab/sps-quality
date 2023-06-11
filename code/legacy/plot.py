@@ -281,3 +281,40 @@ def plot_traces(in_trace_matrix, in_axis_time,
         ax_traces.legend()
     fig_traces.savefig(savefile, bbox_inches="tight")
     plt.close(fig_traces)
+    
+
+# # TODO: Standardise code to work with dataframes or numpy arrays.
+# def plot_traces_mean(in_trace_matrix, in_axis_time,
+#                      in_save_prefix, in_var_name, in_save_suffix = None,
+#                      in_ylim = None, do_include_traces = True):
+    
+#     fig_traces, ax_traces = plt.subplots()
+    
+#     trace_avg = np.mean(in_trace_matrix)
+#     trace_std = np.std(in_trace_matrix)
+    
+#     if do_include_traces:
+#         colors = plt.cm.viridis(np.linspace(0, 1, in_trace_matrix.shape[0]))
+#         ax_traces.set_prop_cycle("color", colors)
+#         ax_traces.plot(in_axis_time, np.transpose(np.array(in_trace_matrix)))
+    
+#     ax_traces.plot(in_axis_time, trace_avg, color="black", 
+#                    label="%i Trace Mean" % in_trace_matrix.shape[0])
+#     ax_traces.plot(in_axis_time, trace_avg+trace_std, color="black", linestyle = "--",
+#                    label="%i Trace Mean +- Std" % in_trace_matrix.shape[0])
+#     ax_traces.plot(in_axis_time, trace_avg-trace_std, color="black", linestyle = "--")
+#     xlim = [in_axis_time[0], in_axis_time[-1]]
+    
+            
+#     ax_traces.set_xlabel("Total Detection Time (s)")
+#     ax_traces.set_ylabel(in_var_name)
+#     ax_traces.set_xlim(xlim)
+#     if not in_ylim is None:
+#         ax_traces.set_ylim(in_ylim)
+#     savefile = in_save_prefix + "_trace_" + in_var_name
+#     if not in_save_suffix is None:
+#         savefile += "_" + in_save_suffix
+#     savefile += "_mean.png"
+#     ax_traces.legend()
+#     fig_traces.savefig(savefile, bbox_inches="tight")
+#     plt.close(fig_traces)

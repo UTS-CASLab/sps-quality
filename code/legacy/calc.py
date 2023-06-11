@@ -7,6 +7,7 @@ Created on Wed Jan 11 17:25:33 2023
 
 import numpy as np
 from lmfit import Parameters, Minimizer
+# from scipy import optimize as sco
 
 def func_pulsed(params, x, y = None, duration = 1):
     # Define the pulsed-laser fitting function for the delay histogram.
@@ -15,10 +16,10 @@ def func_pulsed(params, x, y = None, duration = 1):
     # x: domain (delays)
     # y: events per bin to be fitted
     # duration: time in seconds over which events have a chance to be detected
-    # rate_bg: mean rate (per second) due to background (noise)
+    # mr_bg: mean rate (per second) due to background (noise)
     # period_pulse: pulse period of the stimulating laser
     # delay_mpe: the delay value at which multi-photon emission (MPE) occurs
-    # rate_env: mean rate (per second) at the function envelope, i.e. the non-MPE peaks
+    # mr_env: mean rate (per second) at the function envelope, i.e. the non-MPE peaks
     # g2zero: the ratio of the MPE mean rate to the envelope mean rate, i.e. g2(0)
     # factor_env: the inverted decay scale for the envelope amplitude 
     # decay_peak: the decay scale for an individual peak
@@ -79,7 +80,7 @@ def estimate_g2zero_pulsed(in_sr_sample, in_sr_delays, in_knowns, use_poisson_li
     # See the supplementary material of: https://doi.org/10.1063/1.5143786
     # The objective to minimise is based on Eq. (S25) and Eq. (S26).
     if use_poisson_likelihood:
-        # r is taken to be the residual fit - data, hence re-adding the data.
+        # r is assumed to be the residual fit - data, hence re-adding the data.
         # The new objective should be fit - data*np.log(fit).
         mini = Minimizer(func_pulsed, params, fcn_args = (in_sr_delays, in_sr_sample, in_duration),
                          reduce_fcn = lambda r : 
@@ -97,3 +98,54 @@ def estimate_g2zero_pulsed(in_sr_sample, in_sr_delays, in_knowns, use_poisson_li
     fitted_params = mini.minimize(method="least_squares", params=fitted_params.params)
     
     return fitted_params
+
+# def func_pulsed_integral(params, a, b):
+#     # Calculates integral of fitting function from a to b.
+#     # Only valid if factor_env is zero.
+#     factor_env = params["factor_env"]
+#     if not factor_env == 0:
+#         raise Exception("Error: A decaying envelope is not appropriate for this integral.")
+        
+#     def func_int(params, tau):
+#         bg = params["bg"]
+#         period_pulse = params["period_pulse"]
+#         amp_env = params["amp_env"]
+#         amp_ratio = params["amp_ratio"]
+#         decay_peak = params["decay_peak"]
+        
+#         tau_m = np.mod(tau, period_pulse)
+#         term_1a = np.sinh((tau_m - period_pulse/2)/decay_peak) / np.sinh(period_pulse/(2*decay_peak))
+#         term_1b = 2*np.floor_divide(tau, period_pulse)
+#         # term_2a = (amp_ratio - 1) * np.exp(-tau/decay_peak)/2
+#         # term_2b = (np.exp(tau/decay_peak)+1)**2 - np.sign(tau)*(np.exp(tau/decay_peak)-1)**2 - 2
+#         term_2a = (amp_ratio - 1)
+#         term_2b = np.heaviside(-tau, 0.5)*np.exp(tau/decay_peak)
+#         term_2c = np.heaviside(tau, 0.5)*(2-np.exp(-tau/decay_peak))
+#         func = bg * tau + amp_env * decay_peak * (term_1a + term_1b + term_2a * (term_2b + term_2c))
+#         # func = bg * tau + amp_env * decay_peak * (term_2a * (term_2b + term_2c))
+#         return func
+    
+#     delay_mpe = params["delay_mpe"]
+#     tau_a = a - delay_mpe
+#     tau_b = b - delay_mpe
+    
+#     integral = func_int(params, tau_b) - func_int(params, tau_a)
+    
+#     return integral
+
+# def cdf_root(x, y, in_params, in_domain_start):
+#     # Define a function where the root indicates the following...
+#     # The x value of the histogram integral corresponding to a specified y value.
+#     return func_pulsed_integral(in_params, in_domain_start, x) - y
+
+# def inverse_sample(y, in_params, in_domain_start, in_domain_end, in_total_int):
+#     # Randomly sample a two-photon event from the pulsed function by inverse-sampling its integral.
+    
+#     # The quasi-linearity of the integral allows for decent initial guesses.
+#     x_guess = (y / in_total_int) * (in_domain_end - in_domain_start)
+    
+#     root_result = sco.root_scalar(cdf_root, args=(y, in_params, in_domain_start),
+#                                   bracket = [in_domain_start, in_domain_end],
+#                                   x0 = x_guess)
+    
+#     return root_result.root
