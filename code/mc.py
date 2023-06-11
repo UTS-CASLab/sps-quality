@@ -91,6 +91,7 @@ for full_filename_prefix in full_filename_prefixes:
     sr_centres = sr_delays + d_delays/2
     
     # Fit by optimising two different definitions of error.
+    # Also fit histograms with background deleted for the least-squares case.
     # See calc.py for more information.
     ignore_bg = False
     for use_poisson_likelihood in [False, True, "no_bg"]:
