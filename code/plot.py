@@ -55,6 +55,9 @@ def plot_event_histogram(in_hist, in_axis_delays, in_constants,
     if do_logarithmic_scale:
         plt.yscale("log")
         ax_sample.legend(loc="upper right", framealpha=1)
+    else:
+        _, ylim_max = ax_sample.get_ylim()
+        ax_sample.set_ylim([0, ylim_max])
     if not (do_only_closeup and in_xlim_closeup is not None):
         fig_sample.savefig(in_save_prefix + "_hist.png",
                            bbox_inches="tight")
