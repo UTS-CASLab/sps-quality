@@ -5,18 +5,18 @@ Created on Mon Feb 13 16:00:21 2023
 @author: David J. Kedziora
 """
 
-import os
+# import os
 
 import pandas as pd
 import numpy as np
-from lmfit import fit_report
+# from lmfit import fit_report
 
-from time import time
-import multiprocessing as mp
-from functools import partial
+# from time import time
+# import multiprocessing as mp
+# from functools import partial
 
 import load
-import calc
+# import calc
 import plot
 
 import seaborn as sns
@@ -136,57 +136,88 @@ for filename_prefix, filename_label in zip(filename_prefixes, filename_labels):
 #     df_temp.drop(df_temp[is_stderr_too_big].index, inplace=True)
 
 #%% Create plots as required.
-plotted_filename_labels = ["1p2uW", "30uW"]#,"1p2uW", "2p5uW", "4uW", "8uW", "10uW-", "10uW+", "20uW", "30uW"]
-plotted_fit_prefixes = ["no_bg_ls_fit", "ls_fit"]
-plotted_num_event_ids = ["10000"]
+# plotted_filename_labels = ["1p2uW", "30uW"]#,"1p2uW", "2p5uW", "4uW", "8uW", "10uW-", "10uW+", "20uW", "30uW"]
+# plotted_fit_prefixes = ["no_bg_ls_fit", "ls_fit"]
+# plotted_num_event_ids = ["10000"]
     
-for param_id in param_ids:
-    
-    df_plot = pd.DataFrame(columns=param_fit_ids)
-    
-    for count_filename in range(len(filename_labels)):
-        filename_label = filename_labels[count_filename]
-        total_events = total_event_list[count_filename]
-        if filename_label in plotted_filename_labels:
-            
-            for count_fit_prefix in range(len(fit_prefixes)):
-                fit_prefix = fit_prefixes[count_fit_prefix]
-                if fit_prefix in plotted_fit_prefixes:
-                    fit_label = fit_labels[count_fit_prefix]
-                    
-                    if not fit_prefix == "no_bg_ls_fit":
-                        # First row of any sample size is the original best fit.
-                        df_temp = mc_results[filename_label][fit_prefix][num_event_ids[0]][param_id]
-                        df_plot = pd.concat([df_plot,
-                                             df_temp.loc[0].to_frame().T.assign(Fit=filename_label + " " + fit_label + " Best", Best="1")], 
-                                            ignore_index=True)
-                    
-                    for count_num_events in range(len(num_event_ids)):
-                        num_events = num_event_ids[count_num_events]
-                        num_event_label = num_event_labels[count_num_events]
-                        if num_events in plotted_num_event_ids:
-                            df_temp = mc_results[filename_label][fit_prefix][num_events][param_id]
+def plot_scatter(plotted_filename_labels, plotted_fit_prefixes, plotted_num_event_ids,
+                 filename_plot,
+                 do_reverse_hues = False, do_reverse_legend = False, do_move_legend = False):
+    for param_id in param_ids:
+        
+        df_plot = pd.DataFrame(columns=param_fit_ids)
+        
+        for count_filename in range(len(filename_labels)):
+            filename_label = filename_labels[count_filename]
+            total_events = total_event_list[count_filename]
+            if filename_label in plotted_filename_labels:
+                
+                for count_fit_prefix in range(len(fit_prefixes)):
+                    fit_prefix = fit_prefixes[count_fit_prefix]
+                    if fit_prefix in plotted_fit_prefixes:
+                        fit_label = fit_labels[count_fit_prefix]
+                        
+                        if not fit_prefix == "no_bg_ls_fit":
+                            # First row of any sample size is the original best fit.
+                            df_temp = mc_results[filename_label][fit_prefix][num_event_ids[0]][param_id]
                             df_plot = pd.concat([df_plot,
-                                                 df_temp.loc[1:].assign(Fit=filename_label + " " + fit_label + " " + num_event_label, Best="0")],
+                                                 df_temp.loc[0].to_frame().T.assign(Fit=filename_label + " " + fit_label + " Best", Best="1")], 
                                                 ignore_index=True)
-            
-            # dataset = pd.concat([mc_results["pnoise_fits"]["1000"]["amp_ratio"].assign(dataset="set1"), 
-            #                      mc_results["fits"]["1000"]["amp_ratio"].assign(dataset="set2")])
-            
-    g = sns.JointGrid(data=df_plot.iloc[::-1], x="value", y="stderr", hue="Fit", ratio=3)
-    # g = sns.JointGrid(data=df_plot, x="value", y="stderr", hue="Fit")
-    
-    g.plot_joint(sns.scatterplot)
-    handles, labels = g.ax_joint.get_legend_handles_labels()
-    g.ax_joint.legend(handles[::-1], labels[::-1])
-    # g.plot_marginals(sns.stripplot, hue="dataset", dodge=True)
-    # sns.boxplot(df_plot, x=g.hue, y=g.y, ax=g.ax_marg_y)
-    sns.boxplot(df_plot, y=g.hue, x=g.x, ax=g.ax_marg_x)
-    g.ax_marg_y.remove()
-    if param_id == "g2_zero":
-        g.set_axis_labels(xlabel="Value: g", ylabel="Standard Error: g")
-        sns.move_legend(g.ax_joint, "upper left", bbox_to_anchor=(1, 1))
-        g.savefig(plot_prefix + "temp.png" , bbox_inches="tight")
+                        
+                        for count_num_events in range(len(num_event_ids)):
+                            num_events = num_event_ids[count_num_events]
+                            num_event_label = num_event_labels[count_num_events]
+                            if num_events in plotted_num_event_ids:
+                                df_temp = mc_results[filename_label][fit_prefix][num_events][param_id]
+                                df_plot = pd.concat([df_plot,
+                                                     df_temp.loc[1:].assign(Fit=filename_label + " " + fit_label + " " + num_event_label, Best="0")],
+                                                    ignore_index=True)
+        
+        g = None
+        if do_reverse_hues:
+            g = sns.JointGrid(data=df_plot.iloc[::-1], x="value", y="stderr", hue="Fit", ratio=3)
+        else:
+            g = sns.JointGrid(data=df_plot, x="value", y="stderr", hue="Fit", ratio=3)
+        
+        g.plot_joint(sns.scatterplot)
+        if do_reverse_legend:
+            handles, labels = g.ax_joint.get_legend_handles_labels()
+            g.ax_joint.legend(handles[::-1], labels[::-1], title="Fit")
+        sns.boxplot(df_plot, y=g.hue, x=g.x, ax=g.ax_marg_x)
+        g.ax_marg_y.remove()
+        if param_id == "g2_zero":
+            g.set_axis_labels(xlabel="Value: g", ylabel="Standard Error: g")
+            if do_move_legend:
+                sns.move_legend(g.ax_joint, "upper left", bbox_to_anchor=(1, 1))
+            else:
+                sns.move_legend(g.ax_joint, "best")
+            g.savefig(plot_prefix + filename_plot + ".png", bbox_inches="tight")
+        plt.close()
+
+plot_scatter(plotted_filename_labels = ["2p5uW"],
+             plotted_fit_prefixes = ["ls_fit"],
+             plotted_num_event_ids = ["1000000", "100000", "0", "10000", "1000"],
+             filename_plot = "mc_2p5uW_spread",
+             do_reverse_hues = True)
+
+plot_scatter(plotted_filename_labels = ["1p2uW", "2p5uW", "4uW", "8uW", "10uW-", "10uW+", "20uW", "30uW"],
+             plotted_fit_prefixes = ["ls_fit"],
+             plotted_num_event_ids = ["100000"],
+             filename_plot = "mc_sample_variance",
+             do_move_legend = True)   
+         
+plot_scatter(plotted_filename_labels = ["10uW-", "30uW"],
+             plotted_fit_prefixes = ["ls_fit", "p_fit"],
+             plotted_num_event_ids = ["1000000"],
+             filename_plot = "issues_poisson")
+
+plot_scatter(plotted_filename_labels = ["1p2uW", "30uW"],
+             plotted_fit_prefixes = ["no_bg_ls_fit", "ls_fit"],
+             plotted_num_event_ids = ["10000"],
+             filename_plot = "mc_no_bg",
+             do_reverse_hues = True,
+             # do_reverse_legend = True,
+             do_move_legend = True)
         
 #%% Examine expanding averages.
 
@@ -214,9 +245,7 @@ for filename_label, total_event_number in zip(filename_labels, total_event_list)
     expand_mean = df_expand.T.mean()
     expand_std = df_expand.T.std()
     ax_expand.fill_between((df_expand.index+1)*1000, expand_mean - expand_std, expand_mean + expand_std, alpha=0.2)
-    # ax_expand.plot(df_expand.index*1000, expand_mean + expand_std)
     ax_expand.plot((df_expand.index+1)*1000, expand_mean, label = filename_label)
-    # ax_expand.plot(df_expand.index*1000, expand_mean - expand_std)
     
     ax_expand.plot((df_expand.index+1)*1000, sr_1000.expanding().mean(), "k:")
     
@@ -234,16 +263,3 @@ handles, labels = ax_expand.get_legend_handles_labels()
 ax_expand.legend(reversed(handles), reversed(labels), loc = "upper right", framealpha = 1)
 fig_expand.savefig(plot_prefix  + "expanding.png", bbox_inches="tight")
 plt.close(fig_expand)
-# fig_scatter.colorbar(scatter_plot, ax = ax_scatter, 
-#                      label = r"$log_2x$ for $x$ snapshots per sample")
-# plt.colorbar(scatter_plot)
-# fig_scatter.savefig(in_save_prefix + ".png",
-#                     bbox_inches="tight")
-# plt.close(fig_scatter)
-
-# df_perms = pd.DataFrame()
-
-# for count_perm in range(num_perms):
-#     df_perms = pd.concat([df_perms, sr_1000.sample(n=250, ignore_index=True).expanding().mean()])
-# df_perms.rename(columns={0: "g_avg"}, inplace=True)
-# df_perms["num_fits"] = df_perms.index
