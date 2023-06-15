@@ -8,12 +8,12 @@ The scripts provided here demonstratively implement these procedures of data aug
 ## Requirements
 - Anaconda (Python 3.x)
 - Required packages:
-  - `numpy`
-  - `matplotlib`
-  - `pandas`
-  - `lmfit`
-  - `numdifftools`
-  - `seaborn`
+  - `numpy` (version 1.24.3 or later)
+  - `matplotlib` (version 3.6.2 or later)
+  - `pandas` (version 1.4.4 or later)
+  - `lmfit` (version 1.2.1 or later)
+  - `numdifftools` (version 0.9.41 or later)
+  - `seaborn` (version 0.12.2 or later)
 
 ## Installation
 1. Clone this repository to your local machine using the following command:
@@ -27,7 +27,7 @@ The scripts provided here demonstratively implement these procedures of data aug
 
 3. Open Anaconda Prompt (Windows) or Terminal (macOS/Linux) and install the required packages:
    ```
-   conda install -c conda-forge numpy matplotlib pandas lmfit numdifftools seaborn
+   conda install -c conda-forge "numpy>=1.24.3" "matplotlib>=3.6.2" "pandas>=1.4.4" "lmfit>=1.2.1" "numdifftools>=0.9.41" "seaborn>=0.12.2"
    ```
 
 4. Navigate to the repository's directory:
@@ -36,7 +36,12 @@ The scripts provided here demonstratively implement these procedures of data aug
    ```
 
 ## Usage
-The repository provides several Python scripts for data analysis and visualisation. Here are the main scripts:
+The repository provides several Python scripts for data analysis and visualisation. They can be accessed by navigating to the code subdirectory:
+   ```
+   cd sps-quality/code
+   ```
+
+Here are the main scripts:
 
 - `mc.py`: This script loops through select experimental interferometry datasets stored in the `data` directory, fits their histograms, bootstraps new data samples from these best fits, fits histograms of the bootstrapped samples, and compiles statistics for the fit parameters, including SPS quality. The statistics are saved to .pkl files in appropriate `saves` sub-directories. Sample fits are also plotted and saved in appropriate `results` sub-directories.  
   To run this script, execute the following command:
