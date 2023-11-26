@@ -27,7 +27,12 @@ folder_plots = "../results/"
 folder_saves = "../saves/"
 
 # Only full filename prefixes that contain a listed substring will be loaded.
-full_filename_requirements = ["SEQUR"]
+full_filename_requirements = ["SEQUR"] #["2p5uW_4000cps"]
+
+# Forcibly overwrite the best fits.
+# This requires recalculation of its integral.
+g_overwrite = None #1e-2
+bg_overwrite = None #0
 
 random_seed = 0
 
@@ -105,6 +110,12 @@ for full_filename_prefix in full_filename_prefixes:
             ignore_bg = True
             fit_prefix = "no_bg_ls_fit"
             fit_label = "No BG LS Fit"
+        if not g_overwrite is None:
+            fit_prefix += "_g_%.0e" % g_overwrite
+            fit_label += " G %.0e" % g_overwrite
+        if not bg_overwrite is None:
+            fit_prefix += "_bg_%.0e" % bg_overwrite
+            fit_label += " BG %.0e" % bg_overwrite
     
         # Perform the actual 'best' fit.
         print("Generating the best %s for the full dataset." % fit_label)
@@ -121,6 +132,21 @@ for full_filename_prefix in full_filename_prefixes:
                                   in_xlim_closeup = xlim_closeup)
         # TODO: Actually log this. Its streamed display is inconvenient.
         print(fit_report(fit_best))
+
+        if not g_overwrite is None:
+            print("Overwriting 'g'. Be aware that events will truly be approximate.")
+            fit_best.params["g2_zero"].value = g_overwrite
+            fit_best.params["g2_zero"].stderr = 0
+        if not bg_overwrite is None:
+            print("Overwriting 'r_b'. Be aware that events will truly be approximate.")
+            fit_best.params["rate_bg"].value = bg_overwrite
+            fit_best.params["rate_bg"].stderr = 0
+        if any(item is not None for item in [g_overwrite, bg_overwrite]):
+            sr_per_sec = calc.func_pulsed(fit_best.params, sr_centres)
+            sum_per_sec_new = sr_per_sec.sum()
+            print("Prior to the overwrite, best fit suggested %f events per second." % sum_per_sec)
+            print("The overwritten fit now suggests %f events per second. Replacing." % sum_per_sec_new)
+            sum_per_sec = sum_per_sec_new
         
         if ignore_bg:
             bg_rate = fit_best.params["rate_bg"].value

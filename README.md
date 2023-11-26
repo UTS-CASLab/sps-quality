@@ -1,7 +1,7 @@
 # Repository Name: sps-quality
 
 ## Overview
-This repository contains the data and Python scripts associated with the scientific article titled "The Challenge of Quickly Determining the Quality of a Single-Photon Source".  
+This repository contains the data and Python scripts associated with the scientific article titled "Harnessing data augmentation to quantify uncertainty in the early estimation of single-photon source quality" (DOI: 10.1088/2632-2153/ad0d11).  
 The article cautions against overconfidence when estimating the quality of a quantum dot intended to be a single-photon source (SPS). It does so by highlighting uncertainty statistics derived from experimental datasets that are supplemented by data augmentation.  
 The scripts provided here demonstratively implement these procedures of data augmentation and uncertainty analysis.
 
