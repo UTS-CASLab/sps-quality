@@ -16,7 +16,10 @@ This repository also contains the data and Python scripts associated with a foll
   - `lmfit` (version 1.2.1 or later)
   - `numdifftools` (version 0.9.41 or later)
   - `seaborn` (version 0.12.2 or later)
-  
+
+If you are interested in viewing ML data/results, you will need to install Git Large File Storage (LFS) on your local system, otherwise, when you clone this repository, `data\ml\ml.zip` and `results\ml\ml.zip` will appear as pointer files.
+We recommend installing GitHub Desktop, which automatically includes Git LFS.
+
 If you are interested in regenerating ML results, you will also need to locally install the AutonoML package (commit a4dd47d): https://github.com/UTS-CASLab/autonoml
 
 ## Installation
